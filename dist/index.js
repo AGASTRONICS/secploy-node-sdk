@@ -9,12 +9,12 @@ class Secploy {
     constructor(config, options) {
         this.config = config;
         this.client = axios_1.default.create({
-            baseURL: config.baseUrl || 'https://api.secploy.com',
+            baseURL: config.ingestUrl || "https://ingest.secploy.com",
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${config.apiKey}`,
-                'X-Project-ID': config.projectId,
-                'X-Environment': config.environment || 'production',
+                "X-API-Key": config.apiKey,
+                "X-Environment-Key": config.environmentKey,
+                "X-Organization-ID": config.organizationId,
+                "Content-Type": "application/json",
                 ...options?.headers,
             },
             timeout: options?.timeout || 5000,
@@ -22,8 +22,8 @@ class Secploy {
         // Add request interceptor for environment info
         this.client.interceptors.request.use((config) => {
             config.headers = config.headers || {};
-            config.headers['X-SDK-Version'] = '0.1.0';
-            config.headers['X-SDK-Language'] = 'nodejs';
+            config.headers["X-SDK-Version"] = "0.1.0";
+            config.headers["X-SDK-Language"] = "nodejs";
             return config;
         });
     }
@@ -32,7 +32,7 @@ class Secploy {
      */
     async trackEvent(eventData) {
         try {
-            await this.client.post('/v1/events', eventData);
+            await this.client.post("/v1/events", eventData);
         }
         catch (error) {
             if (axios_1.default.isAxiosError(error)) {
@@ -46,7 +46,7 @@ class Secploy {
      */
     async getConfig() {
         try {
-            const response = await this.client.get('/v1/config');
+            const response = await this.client.get("/v1/config");
             return response.data;
         }
         catch (error) {
@@ -71,7 +71,7 @@ class Secploy {
             }
         }
         catch (error) {
-            console.error('Failed to initialize Secploy SDK:', error);
+            console.error("Failed to initialize Secploy SDK:", error);
             // Continue with default configuration
         }
     }
@@ -81,9 +81,8 @@ class Secploy {
     async recordSecurityEvent(eventType, data) {
         await this.trackEvent({
             type: eventType,
-            category: 'security',
-            data,
-            timestamp: new Date().toISOString(),
+            payload: data,
+            timestamp: Date.now(),
         });
     }
     /**
@@ -91,14 +90,13 @@ class Secploy {
      */
     async recordMetric(metricName, value, tags) {
         await this.trackEvent({
-            type: 'metric',
-            category: 'observability',
-            data: {
+            type: "metric",
+            payload: {
                 name: metricName,
                 value,
                 tags,
             },
-            timestamp: new Date().toISOString(),
+            timestamp: Date.now(),
         });
     }
     /**
@@ -106,15 +104,14 @@ class Secploy {
      */
     async recordAuditLog(action, resourceType, resourceId, details) {
         await this.trackEvent({
-            type: 'audit',
-            category: 'security',
-            data: {
+            type: "audit",
+            payload: {
                 action,
                 resourceType,
                 resourceId,
                 details,
             },
-            timestamp: new Date().toISOString(),
+            timestamp: Date.now(),
         });
     }
 }

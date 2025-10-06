@@ -5,13 +5,13 @@ Node.js SDK for the Secploy Security & Observability Platform. Track security ev
 ## Installation
 
 ```bash
-npm install secploy-sdk
+npm install secploy
 ```
 
 ## Quick Start
 
 ```typescript
-import { Secploy } from "secploy-sdk";
+import { Secploy } from "secploy";
 
 // Initialize the SDK
 const secploy = new Secploy({

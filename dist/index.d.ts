@@ -1,4 +1,4 @@
-import { SecployConfig, EventData, SecployOptions } from './types';
+import { EventData, SecployConfig, SecployOptions } from "./types";
 export declare class Secploy {
     private client;
     private readonly config;
