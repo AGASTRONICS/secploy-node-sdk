@@ -1,30 +1,16 @@
-import { EventData, SecployConfig, SecployOptions } from "./types";
+import { SecployConfig, LogHandler } from "./types";
 export declare class Secploy {
-    private client;
     private readonly config;
-    constructor(config: SecployConfig, options?: SecployOptions);
-    /**
-     * Track a security or observability event
-     */
-    trackEvent(eventData: EventData): Promise<void>;
-    /**
-     * Get project configuration
-     */
-    getConfig(): Promise<Record<string, any>>;
-    /**
-     * Initialize SDK with dynamic configuration
-     */
-    initialize(): Promise<void>;
-    /**
-     * Record a security event
-     */
-    recordSecurityEvent(eventType: string, data: Record<string, any>): Promise<void>;
-    /**
-     * Record an observability metric
-     */
-    recordMetric(metricName: string, value: number, tags?: Record<string, string>): Promise<void>;
-    /**
-     * Record an audit log entry
-     */
-    recordAuditLog(action: string, resourceType: string, resourceId: string, details?: Record<string, any>): Promise<void>;
+    private eventQueue;
+    private eventHandler;
+    private eventProcessor;
+    private logHandlers;
+    constructor(config: Partial<SecployConfig>);
+    private getHeaders;
+    private setupLogging;
+    registerLogHandler(handler: LogHandler): void;
+    unregisterLogHandler(handler: LogHandler): void;
+    sendEvent(eventType: string, payload: Record<string, any>): boolean;
+    start(): void;
+    stop(): Promise<void>;
 }

@@ -1,118 +1,94 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Secploy = void 0;
-const axios_1 = __importDefault(require("axios"));
+const types_1 = require("./types");
+const events_1 = require("./events");
+const processor_1 = require("./processor");
+const DEFAULT_CONFIG = {
+    environment: "development",
+    samplingRate: 1.0,
+    heartbeatInterval: 60,
+    maxRetry: 5,
+    debug: false,
+    logLevel: types_1.LogLevel.INFO,
+    batchSize: 100,
+    flushInterval: 60,
+};
 class Secploy {
-    constructor(config, options) {
-        this.config = config;
-        this.client = axios_1.default.create({
-            baseURL: config.ingestUrl || "https://ingest.secploy.com",
-            headers: {
-                "X-API-Key": config.apiKey,
-                "X-Environment-Key": config.environmentKey,
-                "X-Organization-ID": config.organizationId,
-                "Content-Type": "application/json",
-                ...options?.headers,
-            },
-            timeout: options?.timeout || 5000,
-        });
-        // Add request interceptor for environment info
-        this.client.interceptors.request.use((config) => {
-            config.headers = config.headers || {};
-            config.headers["X-SDK-Version"] = "0.1.0";
-            config.headers["X-SDK-Language"] = "nodejs";
-            return config;
-        });
-    }
-    /**
-     * Track a security or observability event
-     */
-    async trackEvent(eventData) {
-        try {
-            await this.client.post("/v1/events", eventData);
+    constructor(config) {
+        this.logHandlers = new Set();
+        // Merge with default config
+        this.config = { ...DEFAULT_CONFIG, ...config };
+        // Validate required fields
+        if (!this.config.apiKey) {
+            throw new Error("API key is required");
         }
-        catch (error) {
-            if (axios_1.default.isAxiosError(error)) {
-                throw new Error(`Failed to track event: ${error.response?.data?.message || error.message}`);
-            }
-            throw error;
+        if (!this.config.environmentKey) {
+            throw new Error("Environment key is required");
+        }
+        if (!this.config.organizationId) {
+            throw new Error("Organization ID is required");
+        }
+        if (!this.config.ingestUrl) {
+            throw new Error("Ingest URL is required");
+        }
+        // Initialize event handling
+        this.eventQueue = new events_1.EventQueue();
+        this.eventHandler = new events_1.EventHandler(this.eventQueue);
+        this.eventProcessor = new processor_1.EventProcessor(this.eventQueue, this.config.ingestUrl, () => this.getHeaders(), this.config.batchSize, this.config.flushInterval, this.config.maxRetry);
+        // Start processing
+        this.start();
+        // Set up debug logging
+        if (this.config.debug) {
+            this.setupLogging();
         }
     }
-    /**
-     * Get project configuration
-     */
-    async getConfig() {
-        try {
-            const response = await this.client.get("/v1/config");
-            return response.data;
-        }
-        catch (error) {
-            if (axios_1.default.isAxiosError(error)) {
-                throw new Error(`Failed to get config: ${error.response?.data?.message || error.message}`);
-            }
-            throw error;
-        }
+    getHeaders() {
+        return {
+            "X-API-Key": this.config.apiKey,
+            "X-Environment-Key": this.config.environmentKey,
+            "X-Organization-ID": this.config.organizationId,
+            "Content-Type": "application/json",
+        };
     }
-    /**
-     * Initialize SDK with dynamic configuration
-     */
-    async initialize() {
-        try {
-            const config = await this.getConfig();
-            // Apply any dynamic configuration from the server
-            if (config.timeout) {
-                this.client.defaults.timeout = config.timeout;
-            }
-            if (config.baseUrl) {
-                this.client.defaults.baseURL = config.baseUrl;
-            }
-        }
-        catch (error) {
-            console.error("Failed to initialize Secploy SDK:", error);
-            // Continue with default configuration
-        }
-    }
-    /**
-     * Record a security event
-     */
-    async recordSecurityEvent(eventType, data) {
-        await this.trackEvent({
-            type: eventType,
-            payload: data,
-            timestamp: Date.now(),
+    setupLogging() {
+        // Override console methods to capture logs
+        const originalConsole = { ...console };
+        const logLevels = {
+            log: types_1.LogLevel.INFO,
+            info: types_1.LogLevel.INFO,
+            warn: types_1.LogLevel.WARNING,
+            error: types_1.LogLevel.ERROR,
+            debug: types_1.LogLevel.DEBUG,
+        };
+        Object.entries(logLevels).forEach(([method, level]) => {
+            console[method] = (...args) => {
+                // Call original console method
+                originalConsole[method](...args);
+                // Forward to log handlers
+                const message = args
+                    .map((arg) => typeof arg === "object" ? JSON.stringify(arg) : String(arg))
+                    .join(" ");
+                this.logHandlers.forEach((handler) => {
+                    handler.handleLog(level, message);
+                });
+            };
         });
     }
-    /**
-     * Record an observability metric
-     */
-    async recordMetric(metricName, value, tags) {
-        await this.trackEvent({
-            type: "metric",
-            payload: {
-                name: metricName,
-                value,
-                tags,
-            },
-            timestamp: Date.now(),
-        });
+    registerLogHandler(handler) {
+        this.logHandlers.add(handler);
     }
-    /**
-     * Record an audit log entry
-     */
-    async recordAuditLog(action, resourceType, resourceId, details) {
-        await this.trackEvent({
-            type: "audit",
-            payload: {
-                action,
-                resourceType,
-                resourceId,
-                details,
-            },
-            timestamp: Date.now(),
-        });
+    unregisterLogHandler(handler) {
+        this.logHandlers.delete(handler);
+    }
+    sendEvent(eventType, payload) {
+        return this.eventHandler.sendEvent(eventType, payload);
+    }
+    start() {
+        this.eventProcessor.start();
+    }
+    async stop() {
+        await this.eventProcessor.stop();
     }
 }
 exports.Secploy = Secploy;

@@ -31,9 +31,6 @@ export class EventHandler {
     this.queue = queue;
   }
 
-  /**
-   * Queue an event for sending. Events are batched and sent periodically.
-   */
   sendEvent(eventType: string, payload: Record<string, any>): boolean {
     try {
       const event: EventData = {

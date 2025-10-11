@@ -20,28 +20,6 @@ const secploy = new Secploy({
   environment: "development",
 });
 
-// Initialize with server configuration
-await secploy.initialize();
-
-// Track a security event
-await secploy.recordSecurityEvent("auth.login.attempt", {
-  userId: "123",
-  success: true,
-  ip: "192.168.1.1",
-});
-
-// Record a metric
-await secploy.recordMetric("api.response.time", 150, {
-  endpoint: "/users",
-  method: "GET",
-});
-
-// Record an audit log
-await secploy.recordAuditLog("update", "user", "user-123", {
-  changes: {
-    email: "new@email.com",
-  },
-});
 ```
 
 ## Configuration

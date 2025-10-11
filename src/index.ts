@@ -1,137 +1,112 @@
-import { EventData, SecployConfig, SecployOptions } from "./types";
-import axios, { AxiosInstance } from "axios";
+import { SecployConfig, LogLevel, LogHandler } from "./types";
+import { EventQueue, EventHandler } from "./events";
+import { EventProcessor } from "./processor";
+
+const DEFAULT_CONFIG: Partial<SecployConfig> = {
+  environment: "development",
+  samplingRate: 1.0,
+  heartbeatInterval: 60,
+  maxRetry: 5,
+  debug: false,
+  logLevel: LogLevel.INFO,
+  batchSize: 100,
+  flushInterval: 60,
+};
 
 export class Secploy {
-  private client: AxiosInstance;
   private readonly config: SecployConfig;
+  private eventQueue: EventQueue;
+  private eventHandler: EventHandler;
+  private eventProcessor: EventProcessor;
+  private logHandlers: Set<LogHandler> = new Set();
 
-  constructor(config: SecployConfig, options?: SecployOptions) {
-    this.config = config;
+  constructor(config: Partial<SecployConfig>) {
+    this.config = { ...DEFAULT_CONFIG, ...config } as SecployConfig;
 
-    this.client = axios.create({
-      baseURL: config.ingestUrl || "https://ingest.secploy.com",
-      headers: {
-        "X-API-Key": config.apiKey,
-        "X-Environment-Key": config.environmentKey,
-        "X-Organization-ID": config.organizationId,
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
-      timeout: options?.timeout || 5000,
-    });
+    if (!this.config.apiKey) {
+      throw new Error("API key is required");
+    }
+    if (!this.config.environmentKey) {
+      throw new Error("Environment key is required");
+    }
+    if (!this.config.organizationId) {
+      throw new Error("Organization ID is required");
+    }
+    if (!this.config.ingestUrl) {
+      throw new Error("Ingest URL is required");
+    }
 
-    // Add request interceptor for environment info
-    this.client.interceptors.request.use((config) => {
-      config.headers = config.headers || {};
-      config.headers["X-SDK-Version"] = "0.1.0";
-      config.headers["X-SDK-Language"] = "nodejs";
-      return config;
-    });
-  }
+    this.eventQueue = new EventQueue();
+    this.eventHandler = new EventHandler(this.eventQueue);
+    this.eventProcessor = new EventProcessor(
+      this.eventQueue,
+      this.config.ingestUrl,
+      () => this.getHeaders(),
+      this.config.batchSize,
+      this.config.flushInterval,
+      this.config.maxRetry,
+    );
 
-  /**
-   * Track a security or observability event
-   */
-  async trackEvent(eventData: EventData): Promise<void> {
-    try {
-      await this.client.post("/v1/events", eventData);
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(
-          `Failed to track event: ${error.response?.data?.message || error.message}`
-        );
-      }
-      throw error;
+    this.start();
+
+    if (this.config.debug) {
+      this.setupLogging();
     }
   }
 
-  /**
-   * Get project configuration
-   */
-  async getConfig(): Promise<Record<string, any>> {
-    try {
-      const response = await this.client.get("/v1/config");
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(
-          `Failed to get config: ${error.response?.data?.message || error.message}`
-        );
-      }
-      throw error;
-    }
+  private getHeaders(): Record<string, string> {
+    return {
+      "X-API-Key": this.config.apiKey,
+      "X-Environment-Key": this.config.environmentKey,
+      "X-Organization-ID": this.config.organizationId,
+      "Content-Type": "application/json",
+    };
   }
 
-  /**
-   * Initialize SDK with dynamic configuration
-   */
-  async initialize(): Promise<void> {
-    try {
-      const config = await this.getConfig();
-      // Apply any dynamic configuration from the server
-      if (config.timeout) {
-        this.client.defaults.timeout = config.timeout;
-      }
-      if (config.baseUrl) {
-        this.client.defaults.baseURL = config.baseUrl;
-      }
-    } catch (error) {
-      console.error("Failed to initialize Secploy SDK:", error);
-      // Continue with default configuration
-    }
-  }
+  private setupLogging(): void {
+    const originalConsole = { ...console };
+    const logLevels: Record<string, LogLevel> = {
+      log: LogLevel.INFO,
+      info: LogLevel.INFO,
+      warn: LogLevel.WARNING,
+      error: LogLevel.ERROR,
+      debug: LogLevel.DEBUG,
+    };
 
-  /**
-   * Record a security event
-   */
-  async recordSecurityEvent(
-    eventType: string,
-    data: Record<string, any>
-  ): Promise<void> {
-    await this.trackEvent({
-      type: eventType,
-      payload: data,
-      timestamp: Date.now(),
+    Object.entries(logLevels).forEach(([method, level]) => {
+      (console as any)[method] = (...args: any[]) => {
+        (originalConsole as any)[method](...args);
+
+        const message = args
+          .map((arg) =>
+            typeof arg === "object" ? JSON.stringify(arg) : String(arg),
+          )
+          .join(" ");
+
+        this.logHandlers.forEach((handler) => {
+          handler.handleLog(level, message);
+        });
+      };
     });
   }
 
-  /**
-   * Record an observability metric
-   */
-  async recordMetric(
-    metricName: string,
-    value: number,
-    tags?: Record<string, string>
-  ): Promise<void> {
-    await this.trackEvent({
-      type: "metric",
-      payload: {
-        name: metricName,
-        value,
-        tags,
-      },
-      timestamp: Date.now(),
-    });
+  registerLogHandler(handler: LogHandler): void {
+    this.logHandlers.add(handler);
   }
 
-  /**
-   * Record an audit log entry
-   */
-  async recordAuditLog(
-    action: string,
-    resourceType: string,
-    resourceId: string,
-    details?: Record<string, any>
-  ): Promise<void> {
-    await this.trackEvent({
-      type: "audit",
-      payload: {
-        action,
-        resourceType,
-        resourceId,
-        details,
-      },
-      timestamp: Date.now(),
-    });
+  unregisterLogHandler(handler: LogHandler): void {
+    this.logHandlers.delete(handler);
+  }
+
+  sendEvent(eventType: string, payload: Record<string, any>): boolean {
+    return this.eventHandler.sendEvent(eventType, payload);
+  }
+
+  start(): void {
+    this.eventProcessor.start();
+  }
+
+  async stop(): Promise<void> {
+    await this.eventProcessor.stop();
   }
 }

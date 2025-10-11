@@ -1,5 +1,3 @@
-import { AxiosRequestConfig } from "axios";
-
 export enum LogLevel {
   DEBUG = "DEBUG",
   INFO = "INFO",
