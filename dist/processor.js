@@ -11,7 +11,7 @@ class EventProcessor {
         this.ingestUrl = ingestUrl.replace(/\/$/, "");
         this.getHeaders = headersCallback;
         this.batchSize = batchSize;
-        this.flushInterval = flushInterval * 1000; // Convert to milliseconds
+        this.flushInterval = flushInterval * 1000;
         this.maxRetry = maxRetry;
         this.isRunning = false;
         this.processorInterval = null;
@@ -36,7 +36,6 @@ class EventProcessor {
             catch (error) {
                 console.error("Send batch failed:", error);
             }
-            // Wait before retrying
             await new Promise((resolve) => setTimeout(resolve, 1000));
         }
         return false;
@@ -60,7 +59,6 @@ class EventProcessor {
                     };
                 }
                 else {
-                    // If send fails, wait before retrying
                     await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
             }
@@ -72,8 +70,7 @@ class EventProcessor {
         }
         console.info("Starting event processor...");
         this.isRunning = true;
-        this.processorInterval = setInterval(() => this.processEvents(), 1000 // Check queue every second
-        );
+        this.processorInterval = setInterval(() => this.processEvents(), 1000);
     }
     async stop() {
         if (!this.isRunning) {
@@ -85,7 +82,6 @@ class EventProcessor {
             clearInterval(this.processorInterval);
             this.processorInterval = null;
         }
-        // Flush any remaining events
         if (this.eventBatch.events.length > 0) {
             await this.sendBatch(this.eventBatch.events);
         }

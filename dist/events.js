@@ -26,9 +26,6 @@ class EventHandler {
     constructor(queue) {
         this.queue = queue;
     }
-    /**
-     * Queue an event for sending. Events are batched and sent periodically.
-     */
     sendEvent(eventType, payload) {
         try {
             const event = {

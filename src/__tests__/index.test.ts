@@ -15,7 +15,6 @@ describe("Secploy", () => {
 
   it("should have required methods", () => {
     const client = new Secploy(config);
-    expect(typeof client.start).toBe("function");
-    expect(typeof client.stop).toBe("function");
+    expect(typeof client.sendEvent).toBe("function");
   });
 });

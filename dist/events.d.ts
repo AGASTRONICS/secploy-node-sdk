@@ -10,8 +10,5 @@ export declare class EventQueue {
 export declare class EventHandler {
     private queue;
     constructor(queue: EventQueue);
-    /**
-     * Queue an event for sending. Events are batched and sent periodically.
-     */
     sendEvent(eventType: string, payload: Record<string, any>): boolean;
 }

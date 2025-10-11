@@ -17,9 +17,7 @@ const DEFAULT_CONFIG = {
 class Secploy {
     constructor(config) {
         this.logHandlers = new Set();
-        // Merge with default config
         this.config = { ...DEFAULT_CONFIG, ...config };
-        // Validate required fields
         if (!this.config.apiKey) {
             throw new Error("API key is required");
         }
@@ -32,13 +30,10 @@ class Secploy {
         if (!this.config.ingestUrl) {
             throw new Error("Ingest URL is required");
         }
-        // Initialize event handling
         this.eventQueue = new events_1.EventQueue();
         this.eventHandler = new events_1.EventHandler(this.eventQueue);
         this.eventProcessor = new processor_1.EventProcessor(this.eventQueue, this.config.ingestUrl, () => this.getHeaders(), this.config.batchSize, this.config.flushInterval, this.config.maxRetry);
-        // Start processing
         this.start();
-        // Set up debug logging
         if (this.config.debug) {
             this.setupLogging();
         }
@@ -52,7 +47,6 @@ class Secploy {
         };
     }
     setupLogging() {
-        // Override console methods to capture logs
         const originalConsole = { ...console };
         const logLevels = {
             log: types_1.LogLevel.INFO,
@@ -63,9 +57,7 @@ class Secploy {
         };
         Object.entries(logLevels).forEach(([method, level]) => {
             console[method] = (...args) => {
-                // Call original console method
                 originalConsole[method](...args);
-                // Forward to log handlers
                 const message = args
                     .map((arg) => typeof arg === "object" ? JSON.stringify(arg) : String(arg))
                     .join(" ");
