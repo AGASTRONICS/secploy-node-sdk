@@ -1,6 +1,6 @@
 {
   "name": "secploy",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Node.js SDK for Secploy Security & Observability Platform",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -19,11 +19,15 @@
     "dist/**/*"
   ],
   "keywords": [
+    "express-middleware",
+    "gate",
+    "monitoring",
+    "observability",
+    "rasp",
+    "sdk",
     "secploy",
     "security",
-    "observability",
-    "monitoring",
-    "sdk"
+    "waf"
   ],
   "author": "Secploy",
   "license": "MIT",
@@ -36,10 +40,18 @@
     "jest": "^29.5.0",
     "prettier": "^3.0.0",
     "ts-jest": "^29.4.4",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@types/ws": "^8.5.0"
   },
   "dependencies": {
-    "axios": "^1.0.0",
-    "secploy": "^0.2.0"
+    "axios": "^1.0.0"
+  },
+  "peerDependencies": {
+    "ws": "^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ws": {
+      "optional": true
+    }
   }
 }
