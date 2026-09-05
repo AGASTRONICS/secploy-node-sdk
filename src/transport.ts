@@ -107,7 +107,11 @@ export function backoffDelay(
   retryAfterMs?: number | null,
   random: () => number = Math.random,
 ): number {
-  if (retryAfterMs !== null && retryAfterMs !== undefined && retryAfterMs >= 0) {
+  if (
+    retryAfterMs !== null &&
+    retryAfterMs !== undefined &&
+    retryAfterMs >= 0
+  ) {
     return Math.min(retryAfterMs, MAX_RETRY_AFTER_MS);
   }
 

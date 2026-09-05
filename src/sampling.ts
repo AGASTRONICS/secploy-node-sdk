@@ -35,7 +35,12 @@ import { createHash } from "crypto";
 
 /** Event types that carry the signal this product exists for. */
 export const ALWAYS_SENT_TYPES: ReadonlySet<string> = new Set([
-  "error", "critical", "fatal", "warning", "warn", "exception",
+  "error",
+  "critical",
+  "fatal",
+  "warning",
+  "warn",
+  "exception",
 ]);
 
 /**
@@ -43,8 +48,17 @@ export const ALWAYS_SENT_TYPES: ReadonlySet<string> = new Set([
  * application calling out that something happened - and never volume traffic.
  */
 export const ALWAYS_SENT_PREFIXES: readonly string[] = [
-  "auth.", "account.", "security.", "access.", "data.", "secret.",
-  "incident.", "fraud.", "compliance.", "payment.", "api.abuse",
+  "auth.",
+  "account.",
+  "security.",
+  "access.",
+  "data.",
+  "secret.",
+  "incident.",
+  "fraud.",
+  "compliance.",
+  "payment.",
+  "api.abuse",
   "dependency_scan.",
 ];
 
@@ -53,7 +67,11 @@ export const ALWAYS_SENT_PREFIXES: readonly string[] = [
  * follows a person where it can and a machine otherwise.
  */
 export const ACTOR_FIELDS: readonly string[] = [
-  "identity_key", "user_id", "session_id", "ip_address", "remote_addr",
+  "identity_key",
+  "user_id",
+  "session_id",
+  "ip_address",
+  "remote_addr",
 ];
 
 /**
@@ -61,15 +79,25 @@ export const ACTOR_FIELDS: readonly string[] = [
  * put every anonymous request in one bucket, so they would all be sampled in or
  * all out together.
  */
-const PLACEHOLDERS: ReadonlySet<string> = new Set(["anonymous", "unknown", "none", ""]);
+const PLACEHOLDERS: ReadonlySet<string> = new Set([
+  "anonymous",
+  "unknown",
+  "none",
+  "",
+]);
 
 /** Whether an event must be sent whatever the rate. */
-export function neverSampled(eventType: unknown, hasStacktrace = false): boolean {
+export function neverSampled(
+  eventType: unknown,
+  hasStacktrace = false,
+): boolean {
   // A stacktrace is unambiguous evidence that something threw, whatever the
   // event was labelled.
   if (hasStacktrace) return true;
 
-  const normalized = String(eventType ?? "").trim().toLowerCase();
+  const normalized = String(eventType ?? "")
+    .trim()
+    .toLowerCase();
   if (ALWAYS_SENT_TYPES.has(normalized)) return true;
   return ALWAYS_SENT_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }
@@ -90,11 +118,14 @@ export function bucket(value: string): number {
 }
 
 /** The most specific identifier available for whoever this event is about. */
-export function actorKey(payload: Record<string, any> | null | undefined): string {
+export function actorKey(
+  payload: Record<string, any> | null | undefined,
+): string {
   if (!payload || typeof payload !== "object") return "";
 
   const sources: Record<string, any>[] = [];
-  if (payload.context && typeof payload.context === "object") sources.push(payload.context);
+  if (payload.context && typeof payload.context === "object")
+    sources.push(payload.context);
   sources.push(payload);
 
   for (const field of ACTOR_FIELDS) {
@@ -108,7 +139,9 @@ export function actorKey(payload: Record<string, any> | null | undefined): strin
   return "";
 }
 
-function hasStacktrace(payload: Record<string, any> | null | undefined): boolean {
+function hasStacktrace(
+  payload: Record<string, any> | null | undefined,
+): boolean {
   if (!payload || typeof payload !== "object") return false;
   for (const source of [payload.context, payload]) {
     if (source && typeof source === "object" && source.stacktrace) return true;

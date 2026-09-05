@@ -71,9 +71,12 @@ describe("logLevel", () => {
 
   const build = (overrides: Record<string, unknown>) => {
     const client = new Secploy({
-      apiKey: "k", environmentKey: "e", organizationId: "o",
+      apiKey: "k",
+      environmentKey: "e",
+      organizationId: "o",
       ingestUrl: "https://ingest.example.com/ingest",
-      captureUncaught: false, realtime: false,
+      captureUncaught: false,
+      realtime: false,
       ...overrides,
     } as any);
     clients.push(client);
@@ -122,9 +125,13 @@ describe("debug", () => {
     const info = jest.spyOn(console, "info").mockImplementation(() => {});
 
     const client = new Secploy({
-      apiKey: "k", environmentKey: "e", organizationId: "o",
+      apiKey: "k",
+      environmentKey: "e",
+      organizationId: "o",
       ingestUrl: "https://ingest.example.com/ingest",
-      captureUncaught: false, captureConsole: false, realtime: false,
+      captureUncaught: false,
+      captureConsole: false,
+      realtime: false,
       debug: true,
     } as any);
 
@@ -139,9 +146,13 @@ describe("debug", () => {
     const info = jest.spyOn(console, "info").mockImplementation(() => {});
 
     const client = new Secploy({
-      apiKey: "k", environmentKey: "e", organizationId: "o",
+      apiKey: "k",
+      environmentKey: "e",
+      organizationId: "o",
       ingestUrl: "https://ingest.example.com/ingest",
-      captureUncaught: false, captureConsole: false, realtime: false,
+      captureUncaught: false,
+      captureConsole: false,
+      realtime: false,
       debug: false,
     } as any);
 

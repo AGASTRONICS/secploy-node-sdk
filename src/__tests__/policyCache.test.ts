@@ -7,7 +7,9 @@ import { BlockedEndpointRule, ControlAction, PolicyPayload } from "../types";
 jest.mock("axios");
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-function rule(overrides: Partial<BlockedEndpointRule> = {}): BlockedEndpointRule {
+function rule(
+  overrides: Partial<BlockedEndpointRule> = {},
+): BlockedEndpointRule {
   return {
     id: "r1",
     method: "POST",
@@ -60,18 +62,26 @@ function cacheWith(body: PolicyPayload): SecurityPolicyCache {
 
 describe("rule matching", () => {
   it("blocks on a matching rule", () => {
-    const result = cacheWith(payload([rule()])).evaluate("POST", "/admin/users")!;
+    const result = cacheWith(payload([rule()])).evaluate(
+      "POST",
+      "/admin/users",
+    )!;
     expect(result.blocked).toBe(true);
     expect(result.reason).toBe("blocked_by_endpoint_rule");
     expect(result.rule!.id).toBe("r1");
   });
 
   it("treats the method as part of the match", () => {
-    expect(cacheWith(payload([rule()])).evaluate("GET", "/admin/users")!.blocked).toBe(false);
+    expect(
+      cacheWith(payload([rule()])).evaluate("GET", "/admin/users")!.blocked,
+    ).toBe(false);
   });
 
   it("allows a non-matching path", () => {
-    const result = cacheWith(payload([rule()])).evaluate("POST", "/public/health")!;
+    const result = cacheWith(payload([rule()])).evaluate(
+      "POST",
+      "/public/health",
+    )!;
     expect(result.blocked).toBe(false);
     expect(result.reason).toBeUndefined();
   });
@@ -115,7 +125,9 @@ describe("control matching", () => {
 
   it("matches an identity control on userId", () => {
     expect(
-      cacheWith(payload([], [control()])).evaluate("GET", "/x", { userId: "user-1" })!.blocked,
+      cacheWith(payload([], [control()])).evaluate("GET", "/x", {
+        userId: "user-1",
+      })!.blocked,
     ).toBe(true);
   });
 
@@ -124,19 +136,32 @@ describe("control matching", () => {
       // The target is the hashed session, because that is what the SDK
       // reported and therefore what the control was created against. A raw
       // session identifier never reaches the API to be targeted.
-      payload([], [control({ target_type: "session", target: hashSessionId("sess-9") })]),
+      payload(
+        [],
+        [control({ target_type: "session", target: hashSessionId("sess-9") })],
+      ),
     );
-    expect(cache.evaluate("GET", "/x", { sessionId: "sess-9" })!.blocked).toBe(true);
+    expect(cache.evaluate("GET", "/x", { sessionId: "sess-9" })!.blocked).toBe(
+      true,
+    );
   });
 
   it("matches an ip control on either address field", () => {
-    const cache = cacheWith(payload([], [control({ target_type: "ip", target: "1.2.3.4" })]));
-    expect(cache.evaluate("GET", "/x", { ipAddress: "1.2.3.4" })!.blocked).toBe(true);
-    expect(cache.evaluate("GET", "/x", { remoteAddr: "1.2.3.4" })!.blocked).toBe(true);
+    const cache = cacheWith(
+      payload([], [control({ target_type: "ip", target: "1.2.3.4" })]),
+    );
+    expect(cache.evaluate("GET", "/x", { ipAddress: "1.2.3.4" })!.blocked).toBe(
+      true,
+    );
+    expect(
+      cache.evaluate("GET", "/x", { remoteAddr: "1.2.3.4" })!.blocked,
+    ).toBe(true);
   });
 
   it("matches an api_key control on the project or environment key", () => {
-    const cache = cacheWith(payload([], [control({ target_type: "api_key", target: "pk-1" })]));
+    const cache = cacheWith(
+      payload([], [control({ target_type: "api_key", target: "pk-1" })]),
+    );
     expect(cache.evaluate("GET", "/x", {}, "pk-1")!.blocked).toBe(true);
 
     const envCache = cacheWith(
@@ -146,12 +171,16 @@ describe("control matching", () => {
   });
 
   it("does not look up controls without an identity", () => {
-    expect(cacheWith(payload([], [control()])).evaluate("GET", "/x")!.blocked).toBe(false);
+    expect(
+      cacheWith(payload([], [control()])).evaluate("GET", "/x")!.blocked,
+    ).toBe(false);
   });
 
   it("ignores an inactive control", () => {
     const cache = cacheWith(payload([], [control({ status: "expired" })]));
-    expect(cache.evaluate("GET", "/x", { identityKey: "user-1" })!.blocked).toBe(false);
+    expect(
+      cache.evaluate("GET", "/x", { identityKey: "user-1" })!.blocked,
+    ).toBe(false);
   });
 
   it("ignores a control that expired while still in the snapshot", () => {
@@ -159,13 +188,17 @@ describe("control matching", () => {
     // locally. Enforcing a lapsed control blocks a request that should pass.
     const past = new Date(Date.now() - 5 * 60_000).toISOString();
     const cache = cacheWith(payload([], [control({ expires_at: past })]));
-    expect(cache.evaluate("GET", "/x", { identityKey: "user-1" })!.blocked).toBe(false);
+    expect(
+      cache.evaluate("GET", "/x", { identityKey: "user-1" })!.blocked,
+    ).toBe(false);
   });
 
   it("still applies an unexpired control", () => {
     const future = new Date(Date.now() + 5 * 60_000).toISOString();
     const cache = cacheWith(payload([], [control({ expires_at: future })]));
-    expect(cache.evaluate("GET", "/x", { identityKey: "user-1" })!.blocked).toBe(true);
+    expect(
+      cache.evaluate("GET", "/x", { identityKey: "user-1" })!.blocked,
+    ).toBe(true);
   });
 
   it("returns a control matched twice only once", () => {
@@ -183,33 +216,45 @@ describe("endpoint scoping", () => {
 
   it("applies on a matching path", () => {
     const cache = scoped({ method: "POST", path_pattern: "^/pay" });
-    expect(cache.evaluate("POST", "/pay/charge", { identityKey: "user-1" })!.blocked).toBe(true);
+    expect(
+      cache.evaluate("POST", "/pay/charge", { identityKey: "user-1" })!.blocked,
+    ).toBe(true);
   });
 
   it("is skipped on another path", () => {
     const cache = scoped({ method: "POST", path_pattern: "^/pay" });
-    expect(cache.evaluate("POST", "/profile", { identityKey: "user-1" })!.blocked).toBe(false);
+    expect(
+      cache.evaluate("POST", "/profile", { identityKey: "user-1" })!.blocked,
+    ).toBe(false);
   });
 
   it("is skipped on another method", () => {
     const cache = scoped({ method: "POST", path_pattern: "^/pay" });
-    expect(cache.evaluate("GET", "/pay/charge", { identityKey: "user-1" })!.blocked).toBe(false);
+    expect(
+      cache.evaluate("GET", "/pay/charge", { identityKey: "user-1" })!.blocked,
+    ).toBe(false);
   });
 
   it("applies to every path when the scope is method-only", () => {
     const cache = scoped({ method: "DELETE" });
-    expect(cache.evaluate("DELETE", "/anything", { identityKey: "user-1" })!.blocked).toBe(true);
+    expect(
+      cache.evaluate("DELETE", "/anything", { identityKey: "user-1" })!.blocked,
+    ).toBe(true);
   });
 
   it("stays project-wide without a scope", () => {
     const cache = cacheWith(payload([], [control()]));
-    expect(cache.evaluate("GET", "/anything", { identityKey: "user-1" })!.blocked).toBe(true);
+    expect(
+      cache.evaluate("GET", "/anything", { identityKey: "user-1" })!.blocked,
+    ).toBe(true);
   });
 });
 
 describe("snapshot", () => {
   it("buckets rules by method and compiles them once", () => {
-    const snap = new PolicySnapshot(payload([rule(), rule({ id: "r2", method: "GET" })]));
+    const snap = new PolicySnapshot(
+      payload([rule(), rule({ id: "r2", method: "GET" })]),
+    );
     expect([...snap.rulesByMethod.keys()].sort()).toEqual(["GET", "POST"]);
     expect(snap.ruleCount).toBe(2);
     expect(snap.rulesByMethod.get("POST")![0].regex).not.toBeNull();
@@ -217,7 +262,10 @@ describe("snapshot", () => {
 
   it("drops inactive controls at build time", () => {
     const snap = new PolicySnapshot(
-      payload([], [control({ id: "a" }), control({ id: "b", status: "expired" })]),
+      payload(
+        [],
+        [control({ id: "a" }), control({ id: "b", status: "expired" })],
+      ),
     );
     expect(snap.controlCount).toBe(1);
   });
@@ -250,15 +298,23 @@ describe("fetch", () => {
   });
 
   it("sends If-None-Match once a version is known", async () => {
-    mockedAxios.get.mockResolvedValue({ status: 200, data: payload([], [], "v7") });
+    mockedAxios.get.mockResolvedValue({
+      status: 200,
+      data: payload([], [], "v7"),
+    });
     await cache.fetch();
     mockedAxios.get.mockResolvedValue({ status: 304, data: null });
     await cache.fetch();
-    expect(mockedAxios.get.mock.calls[1][1]!.headers!["If-None-Match"]).toBe('"v7"');
+    expect(mockedAxios.get.mock.calls[1][1]!.headers!["If-None-Match"]).toBe(
+      '"v7"',
+    );
   });
 
   it("keeps the existing snapshot on 304", async () => {
-    mockedAxios.get.mockResolvedValue({ status: 200, data: payload([], [], "v1") });
+    mockedAxios.get.mockResolvedValue({
+      status: 200,
+      data: payload([], [], "v1"),
+    });
     const first = await cache.fetch();
     mockedAxios.get.mockResolvedValue({ status: 304, data: null });
     expect(await cache.fetch()).toBe(first);
@@ -277,7 +333,10 @@ describe("fetch", () => {
   });
 
   it("keeps the previous snapshot on an error status", async () => {
-    mockedAxios.get.mockResolvedValue({ status: 200, data: payload([], [], "good") });
+    mockedAxios.get.mockResolvedValue({
+      status: 200,
+      data: payload([], [], "good"),
+    });
     await cache.fetch();
     mockedAxios.get.mockResolvedValue({ status: 500, data: null });
     await cache.fetch();
@@ -285,9 +344,15 @@ describe("fetch", () => {
   });
 
   it("keeps the previous snapshot on a non-object body", async () => {
-    mockedAxios.get.mockResolvedValue({ status: 200, data: payload([], [], "good") });
+    mockedAxios.get.mockResolvedValue({
+      status: 200,
+      data: payload([], [], "good"),
+    });
     await cache.fetch();
-    mockedAxios.get.mockResolvedValue({ status: 200, data: ["not", "a", "dict"] });
+    mockedAxios.get.mockResolvedValue({
+      status: 200,
+      data: ["not", "a", "dict"],
+    });
     await cache.fetch();
     expect(cache.version).toBe("good");
   });

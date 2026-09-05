@@ -73,7 +73,8 @@ const MAX_FRAMES = 50;
 
 const FRAME_WITH_FUNCTION = /^\s*at\s+(.+?)\s+\((.+?):(\d+):(\d+)\)$/;
 const FRAME_BARE = /^\s*at\s+(.+?):(\d+):(\d+)$/;
-const FRAME_NATIVE = /^\s*at\s+(.+?)\s+\((native|<anonymous>|unknown location)\)$/;
+const FRAME_NATIVE =
+  /^\s*at\s+(.+?)\s+\((native|<anonymous>|unknown location)\)$/;
 
 /**
  * Read a string property without trusting the object.
@@ -172,13 +173,17 @@ export function parseStack(stack: string, root = appRoot()): StackFrame[] {
       function: fn,
       lineno,
       colno,
-      in_app: !isVendor(filename) && !filename.startsWith("<") && filename !== "native",
+      in_app:
+        !isVendor(filename) &&
+        !filename.startsWith("<") &&
+        filename !== "native",
     });
   }
 
   // Keep the innermost frames, which are where the failure is - still V8's
   // order at this point, so that is the front.
-  const kept = frames.length > MAX_FRAMES ? frames.slice(0, MAX_FRAMES) : frames;
+  const kept =
+    frames.length > MAX_FRAMES ? frames.slice(0, MAX_FRAMES) : frames;
 
   // Into the canonical order.
   return kept.reverse();
@@ -191,7 +196,11 @@ export function parseStack(stack: string, root = appRoot()): StackFrame[] {
  * legal and all happen. Each needs to arrive as a report rather than as a
  * second failure inside the reporter.
  */
-export function normalizeError(thrown: unknown): { type: string; value: string; stack: string } {
+export function normalizeError(thrown: unknown): {
+  type: string;
+  value: string;
+  stack: string;
+} {
   if (thrown instanceof Error) {
     return {
       type: thrown.name || "Error",
@@ -205,7 +214,11 @@ export function normalizeError(thrown: unknown): { type: string; value: string; 
   }
 
   if (thrown === null || thrown === undefined) {
-    return { type: "Error", value: `Non-error thrown: ${String(thrown)}`, stack: "" };
+    return {
+      type: "Error",
+      value: `Non-error thrown: ${String(thrown)}`,
+      stack: "",
+    };
   }
 
   if (typeof thrown === "object") {
@@ -229,10 +242,18 @@ export function normalizeError(thrown: unknown): { type: string; value: string; 
       // Circular, or a getter that throws. Never let describing a failure fail.
       described = Object.prototype.toString.call(thrown);
     }
-    return { type: "Error", value: `Non-error thrown: ${described}`.slice(0, 1000), stack: "" };
+    return {
+      type: "Error",
+      value: `Non-error thrown: ${described}`.slice(0, 1000),
+      stack: "",
+    };
   }
 
-  return { type: "Error", value: `Non-error thrown: ${String(thrown)}`, stack: "" };
+  return {
+    type: "Error",
+    value: `Non-error thrown: ${String(thrown)}`,
+    stack: "",
+  };
 }
 
 /**
@@ -242,13 +263,24 @@ export function normalizeError(thrown: unknown): { type: string; value: string; 
  * these strings so that an ingest that has not been updated still understands
  * the event.
  */
-export function formatStack(type: string, value: string, frames: StackFrame[]): string[] {
+export function formatStack(
+  type: string,
+  value: string,
+  frames: StackFrame[],
+): string[] {
   const lines = [`${type}: ${value}`];
   // Back into V8's display order, so a person reading the raw event sees the
   // stack the way their runtime would have printed it.
   for (const frame of [...frames].reverse()) {
-    const where = frame.lineno !== null ? `${frame.filename}:${frame.lineno}:${frame.colno ?? 0}` : frame.filename;
-    lines.push(frame.function ? `    at ${frame.function} (${where})` : `    at ${where}`);
+    const where =
+      frame.lineno !== null
+        ? `${frame.filename}:${frame.lineno}:${frame.colno ?? 0}`
+        : frame.filename;
+    lines.push(
+      frame.function
+        ? `    at ${frame.function} (${where})`
+        : `    at ${where}`,
+    );
   }
   return lines;
 }
@@ -264,7 +296,9 @@ export function parseError(thrown: unknown, root = appRoot()): ParsedError {
     frames,
     // When there was no stack - a thrown string, a rejected plain object - the
     // formatted form is still emitted so the event is never blank.
-    stacktrace: stack ? stack.split("\n").filter((line) => line.trim() !== "") : formatStack(type, value, frames),
+    stacktrace: stack
+      ? stack.split("\n").filter((line) => line.trim() !== "")
+      : formatStack(type, value, frames),
   };
 }
 

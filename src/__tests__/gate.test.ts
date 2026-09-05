@@ -18,10 +18,19 @@ const BLOCK_RULE = {
 };
 
 function policy(rules: any[] = [], controls: any[] = []): PolicyPayload {
-  return { version: "v1", ttl_seconds: 300, blocked_endpoints: rules, controls };
+  return {
+    version: "v1",
+    ttl_seconds: 300,
+    blocked_endpoints: rules,
+    controls,
+  };
 }
 
-function buildGate(mode: GateMode, snapshot: PolicyPayload | null, sendEvent = jest.fn()) {
+function buildGate(
+  mode: GateMode,
+  snapshot: PolicyPayload | null,
+  sendEvent = jest.fn(),
+) {
   const cache = new SecurityPolicyCache({
     apiUrl: "https://api.secploy.com",
     headersCallback: () => ({}),
@@ -63,7 +72,9 @@ describe("normalizeEndpoint", () => {
   });
 
   it("strips scheme and host", () => {
-    expect(normalizeEndpoint("https://app.example.com/admin/users")).toBe("/admin/users");
+    expect(normalizeEndpoint("https://app.example.com/admin/users")).toBe(
+      "/admin/users",
+    );
   });
 
   it("drops query and fragment", () => {
@@ -165,9 +176,9 @@ describe("fail open", () => {
 describe("check", () => {
   it("throws SecurityGateBlocked on a blocked request", async () => {
     const { gate } = buildGate("cached", policy([BLOCK_RULE]));
-    await expect(gate.check({ method: "POST", endpoint: "/admin" })).rejects.toBeInstanceOf(
-      SecurityGateBlocked,
-    );
+    await expect(
+      gate.check({ method: "POST", endpoint: "/admin" }),
+    ).rejects.toBeInstanceOf(SecurityGateBlocked);
   });
 
   it("returns the decision when allowed", async () => {
@@ -187,7 +198,10 @@ describe("check", () => {
     };
     const { gate } = buildGate("cached", policy([], [control]));
     try {
-      await gate.check({ method: "GET", endpoint: "/x" }, { sessionId: "sess-1" });
+      await gate.check(
+        { method: "GET", endpoint: "/x" },
+        { sessionId: "sess-1" },
+      );
       throw new Error("should have thrown");
     } catch (error) {
       const blocked = error as SecurityGateBlocked;
@@ -282,7 +296,10 @@ describe("identity reporting on the cached path", () => {
   it("records the identity when no API call would", async () => {
     const { gate, identities } = buildGate("cached", policy());
     const spy = jest.spyOn(identities, "record");
-    await gate.inspect({ method: "GET", endpoint: "/x" }, { identityKey: "user-1" });
+    await gate.inspect(
+      { method: "GET", endpoint: "/x" },
+      { identityKey: "user-1" },
+    );
     // Without this, caching the gate would silently stop identity telemetry.
     expect(spy).toHaveBeenCalledWith({ identityKey: "user-1" });
   });
@@ -302,10 +319,14 @@ describe("express middleware", () => {
     const response = res();
 
     await new Promise<void>((resolve) => {
-      gate.express()({ method: "GET", url: "/x", headers: {} }, response, () => {
-        next();
-        resolve();
-      });
+      gate.express()(
+        { method: "GET", url: "/x", headers: {} },
+        response,
+        () => {
+          next();
+          resolve();
+        },
+      );
     });
 
     expect(next).toHaveBeenCalled();
@@ -318,7 +339,11 @@ describe("express middleware", () => {
     const response = res();
     response.json.mockImplementation(() => response);
 
-    gate.express()({ method: "POST", url: "/admin/users", headers: {} }, response, next);
+    gate.express()(
+      { method: "POST", url: "/admin/users", headers: {} },
+      response,
+      next,
+    );
     await new Promise((resolve) => setImmediate(resolve));
 
     expect(response.status).toHaveBeenCalledWith(403);

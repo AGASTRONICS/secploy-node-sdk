@@ -25,7 +25,9 @@ function reporter(options: Partial<IdentityReporterOptions> = {}) {
 }
 
 function sentIdentities() {
-  return mockedAxios.post.mock.calls[0][1] as { identities: Record<string, any>[] };
+  return mockedAxios.post.mock.calls[0][1] as {
+    identities: Record<string, any>[];
+  };
 }
 
 beforeEach(() => {

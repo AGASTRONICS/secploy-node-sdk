@@ -63,7 +63,9 @@ export interface SecployConfig {
    * event to send it, or null to drop it. Runs before scrubbing, so anything
    * it returns is still scrubbed on the way out.
    */
-  beforeSend?: (payload: Record<string, any>) => Record<string, any> | null | undefined;
+  beforeSend?: (
+    payload: Record<string, any>,
+  ) => Record<string, any> | null | undefined;
   /** Gate decision strategy. Defaults to "remote". */
   gateMode?: GateMode;
   /** Seconds before an unrefreshed policy snapshot starts warning. */

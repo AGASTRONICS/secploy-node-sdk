@@ -13,8 +13,18 @@ const scrubber = new Scrubber();
 describe("denied keys", () => {
   it("redacts credentials whatever the naming style", () => {
     // "API-Key", "api_key" and "apiKey" are one rule, not three.
-    for (const key of ["password", "API_KEY", "apiKey", "Authorization", "x-api-key", "Set-Cookie"]) {
-      const out = scrubber.scrub({ [key]: "hunter2" }) as Record<string, unknown>;
+    for (const key of [
+      "password",
+      "API_KEY",
+      "apiKey",
+      "Authorization",
+      "x-api-key",
+      "Set-Cookie",
+    ]) {
+      const out = scrubber.scrub({ [key]: "hunter2" }) as Record<
+        string,
+        unknown
+      >;
       expect(out[key]).toBe(REDACTED);
     }
   });
@@ -59,13 +69,19 @@ describe("denied keys", () => {
     // and it must not, because it is how a session is recognised across events.
     // It arrives already hashed.
     const hashed = hashSessionId("abc");
-    const out = scrubber.scrub({ session_id: hashed }) as Record<string, unknown>;
+    const out = scrubber.scrub({ session_id: hashed }) as Record<
+      string,
+      unknown
+    >;
     expect(out.session_id).toBe(hashed);
   });
 
   it("accepts extra denied keys", () => {
     const custom = new Scrubber({ denyKeys: ["internal_ref"] });
-    const out = custom.scrub({ internal_ref: "abc", user_id: "1" }) as Record<string, unknown>;
+    const out = custom.scrub({ internal_ref: "abc", user_id: "1" }) as Record<
+      string,
+      unknown
+    >;
     expect(out.internal_ref).toBe(REDACTED);
     expect(out.user_id).toBe("1");
   });
@@ -78,7 +94,8 @@ describe("denied keys", () => {
 
 describe("value patterns", () => {
   it("removes a JWT wherever it appears", () => {
-    const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+    const jwt =
+      "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk";
     expect(scrubString(`token=${jwt} rest`)).toContain(REDACTED);
     expect(scrubString(`token=${jwt} rest`)).not.toContain(jwt);
   });
@@ -98,13 +115,16 @@ describe("value patterns", () => {
   });
 
   it("removes a private key block entirely", () => {
-    const pem = "-----BEGIN RSA PRIVATE KEY-----\nMIIEow\nlines\n-----END RSA PRIVATE KEY-----";
+    const pem =
+      "-----BEGIN RSA PRIVATE KEY-----\nMIIEow\nlines\n-----END RSA PRIVATE KEY-----";
     const out = scrubString(`config: ${pem}`);
     expect(out).not.toContain("MIIEow");
   });
 
   it("removes credentials embedded in a URL", () => {
-    const out = scrubString("connecting to postgres://admin:s3cret@db.internal:5432/app");
+    const out = scrubString(
+      "connecting to postgres://admin:s3cret@db.internal:5432/app",
+    );
     expect(out).not.toContain("s3cret");
     expect(out).toContain("db.internal");
   });
@@ -117,7 +137,11 @@ describe("value patterns", () => {
 
 describe("card numbers", () => {
   it("redacts a real card number", () => {
-    for (const card of ["4111111111111111", "4111 1111 1111 1111", "5500-0000-0000-0004"]) {
+    for (const card of [
+      "4111111111111111",
+      "4111 1111 1111 1111",
+      "5500-0000-0000-0004",
+    ]) {
       expect(scrubString(`paid with ${card}`)).toContain(REDACTED);
     }
   });
@@ -125,7 +149,11 @@ describe("card numbers", () => {
   it("leaves numbers that are not cards alone", () => {
     // Luhn is what keeps this from redacting order numbers, timestamps and
     // database ids - which would make the product worse at its job for nothing.
-    for (const value of ["4111111111111112", "1234567890123", "1700000000000000"]) {
+    for (const value of [
+      "4111111111111112",
+      "1234567890123",
+      "1700000000000000",
+    ]) {
       expect(scrubString(`ref ${value}`)).toContain(value);
     }
   });
@@ -138,7 +166,10 @@ describe("card numbers", () => {
 describe("walking a payload", () => {
   it("reaches nested values", () => {
     const out = scrubber.scrub({
-      request: { headers: { authorization: "Bearer abc" }, body: { password: "x" } },
+      request: {
+        headers: { authorization: "Bearer abc" },
+        body: { password: "x" },
+      },
     }) as any;
 
     expect(out.request.headers.authorization).toBe(REDACTED);
@@ -146,7 +177,9 @@ describe("walking a payload", () => {
   });
 
   it("reaches inside arrays", () => {
-    const out = scrubber.scrub({ users: [{ name: "a", password: "x" }] }) as any;
+    const out = scrubber.scrub({
+      users: [{ name: "a", password: "x" }],
+    }) as any;
     expect(out.users[0].password).toBe(REDACTED);
     expect(out.users[0].name).toBe("a");
   });
@@ -205,7 +238,14 @@ describe("walking a payload", () => {
   });
 
   it("never throws, whatever it is handed", () => {
-    for (const value of [undefined, null, Symbol("x"), BigInt(1), () => 1, new Map()]) {
+    for (const value of [
+      undefined,
+      null,
+      Symbol("x"),
+      BigInt(1),
+      () => 1,
+      new Map(),
+    ]) {
       expect(() => scrubber.scrub(value)).not.toThrow();
     }
   });
@@ -240,9 +280,15 @@ describe("hashSessionId", () => {
 });
 
 describe("the event boundary", () => {
-  function handlerWith(options: { beforeSend?: any; scrubber?: Scrubber } = {}) {
+  function handlerWith(
+    options: { beforeSend?: any; scrubber?: Scrubber } = {},
+  ) {
     const queue = new EventQueue(100);
-    const handler = new EventHandler(queue, options.scrubber, options.beforeSend);
+    const handler = new EventHandler(
+      queue,
+      options.scrubber,
+      options.beforeSend,
+    );
     return { queue, handler };
   }
 
@@ -251,7 +297,9 @@ describe("the event boundary", () => {
     // per call site guarantees the next payload someone adds is the one that
     // leaks.
     const { queue, handler } = handlerWith();
-    handler.sendEvent("error", { context: { password: "hunter2", user_id: "1" } });
+    handler.sendEvent("error", {
+      context: { password: "hunter2", user_id: "1" },
+    });
 
     const event = queue.dequeue()!;
     expect((event.payload as any).context.password).toBe(REDACTED);
@@ -282,7 +330,10 @@ describe("the event boundary", () => {
 
   it("scrubs after the hook, so nothing it adds escapes", () => {
     const { queue, handler } = handlerWith({
-      beforeSend: (payload: any) => ({ ...payload, extra: { api_key: "leaked" } }),
+      beforeSend: (payload: any) => ({
+        ...payload,
+        extra: { api_key: "leaked" },
+      }),
     });
     handler.sendEvent("error", { message: "x" });
 
@@ -307,7 +358,9 @@ describe("the event boundary", () => {
 
   it("keeps the event when the hook returns nonsense", () => {
     const spy = jest.spyOn(console, "error").mockImplementation(() => {});
-    const { queue, handler } = handlerWith({ beforeSend: () => "not an object" as any });
+    const { queue, handler } = handlerWith({
+      beforeSend: () => "not an object" as any,
+    });
 
     expect(handler.sendEvent("error", { message: "x" })).toBe(true);
     expect(queue.size()).toBe(1);

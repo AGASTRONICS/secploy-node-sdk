@@ -37,8 +37,12 @@ export class SecurityGateBlocked extends Error {
   constructor(decision: SecurityGateDecision) {
     const controls = decision.controls ?? [];
     const first = controls[0];
-    const parts = [`Secploy blocked ${decision.method} ${decision.endpoint}`, decision.reason];
-    if (first?.action_type) parts.push(`${first.action_type} -> ${first.target}`);
+    const parts = [
+      `Secploy blocked ${decision.method} ${decision.endpoint}`,
+      decision.reason,
+    ];
+    if (first?.action_type)
+      parts.push(`${first.action_type} -> ${first.target}`);
     super(parts.filter(Boolean).join(" | "));
 
     this.name = "SecurityGateBlocked";
@@ -132,9 +136,12 @@ export class SecployGate {
   ): SecurityGateDecision {
     const blocked = Boolean(payload?.blocked);
     const rule = payload?.rule ?? {};
-    const controls: ControlAction[] = payload?.controls ?? payload?.actions ?? [];
+    const controls: ControlAction[] =
+      payload?.controls ?? payload?.actions ?? [];
     const reason =
-      payload?.reason || rule?.reason || (blocked ? "blocked_by_rule" : "allowed");
+      payload?.reason ||
+      rule?.reason ||
+      (blocked ? "blocked_by_rule" : "allowed");
 
     return {
       allowed: !blocked,
@@ -195,7 +202,8 @@ export class SecployGate {
     ];
     for (const [field, name] of wire) {
       const value = auth[field];
-      if (value !== undefined && value !== null && value !== "") params[name] = value;
+      if (value !== undefined && value !== null && value !== "")
+        params[name] = value;
     }
 
     let response: any;
@@ -210,15 +218,33 @@ export class SecployGate {
         },
       );
     } catch (error) {
-      console.warn(`[secploy] Gate lookup failed for ${method} ${endpoint}:`, error);
-      return this.failOpenDecision(method, endpoint, rawUrl, "lookup_unavailable");
+      console.warn(
+        `[secploy] Gate lookup failed for ${method} ${endpoint}:`,
+        error,
+      );
+      return this.failOpenDecision(
+        method,
+        endpoint,
+        rawUrl,
+        "lookup_unavailable",
+      );
     }
 
     if (response.status < 200 || response.status >= 300) {
-      return this.failOpenDecision(method, endpoint, rawUrl, `http_${response.status}`);
+      return this.failOpenDecision(
+        method,
+        endpoint,
+        rawUrl,
+        `http_${response.status}`,
+      );
     }
     if (!response.data || typeof response.data !== "object") {
-      return this.failOpenDecision(method, endpoint, rawUrl, "invalid_response_payload");
+      return this.failOpenDecision(
+        method,
+        endpoint,
+        rawUrl,
+        "invalid_response_payload",
+      );
     }
 
     return this.decisionFromPayload(response.data, method, endpoint, rawUrl);
@@ -315,7 +341,9 @@ export class SecployGate {
     auth?: SecurityGateAuthContext | Record<string, any>,
     metadata?: Record<string, any>,
   ): Promise<SecurityGateDecision> {
-    const method = String((request as any).method ?? "GET").trim().toUpperCase();
+    const method = String((request as any).method ?? "GET")
+      .trim()
+      .toUpperCase();
     const rawUrl = String(
       (request as any).endpoint ??
         (request as any).originalUrl ??
@@ -329,7 +357,12 @@ export class SecployGate {
       : this.resolveAuth(request as GateRequestLike);
 
     if (!method || !endpoint) {
-      return this.failOpenDecision(method, endpoint, rawUrl, "missing_method_or_endpoint");
+      return this.failOpenDecision(
+        method,
+        endpoint,
+        rawUrl,
+        "missing_method_or_endpoint",
+      );
     }
 
     let decision: SecurityGateDecision;
@@ -343,7 +376,12 @@ export class SecployGate {
         (await this.remoteDecision(method, endpoint, rawUrl, resolvedAuth));
     } else if (this.mode === "shadow") {
       const local = this.cachedDecision(method, endpoint, rawUrl, resolvedAuth);
-      const remote = await this.remoteDecision(method, endpoint, rawUrl, resolvedAuth);
+      const remote = await this.remoteDecision(
+        method,
+        endpoint,
+        rawUrl,
+        resolvedAuth,
+      );
       if (local !== null && remote.reason !== "lookup_unavailable") {
         if (SecployGate.signature(local) !== SecployGate.signature(remote)) {
           this.reportShadowMismatch(local, remote, method, endpoint);
@@ -352,7 +390,12 @@ export class SecployGate {
       // The API stays authoritative in shadow mode.
       decision = remote;
     } else {
-      decision = await this.remoteDecision(method, endpoint, rawUrl, resolvedAuth);
+      decision = await this.remoteDecision(
+        method,
+        endpoint,
+        rawUrl,
+        resolvedAuth,
+      );
     }
 
     if (!this.failOpen && decision.reason === "lookup_unavailable") {
@@ -388,7 +431,10 @@ export class SecployGate {
       try {
         return normalizeAuthContext(this.options.identityResolver(request));
       } catch (error) {
-        console.warn("[secploy] identityResolver threw; falling back to defaults:", error);
+        console.warn(
+          "[secploy] identityResolver threw; falling back to defaults:",
+          error,
+        );
       }
     }
 
@@ -410,14 +456,16 @@ export class SecployGate {
       request?.socket?.remoteAddress;
 
     const userId = user.id ?? user.userId ?? user.sub ?? session.userId;
-    const sessionId = session.id ?? session.sessionId ?? headerValue("x-session-id");
+    const sessionId =
+      session.id ?? session.sessionId ?? headerValue("x-session-id");
 
     const auth: SecurityGateAuthContext = {};
     if (userId !== undefined && userId !== null) {
       auth.userId = String(userId);
       auth.identityKey = String(userId);
     }
-    if (sessionId !== undefined && sessionId !== null) auth.sessionId = String(sessionId);
+    if (sessionId !== undefined && sessionId !== null)
+      auth.sessionId = String(sessionId);
     if (ipAddress) {
       auth.ipAddress = String(ipAddress);
       auth.remoteAddr = String(request?.socket?.remoteAddress ?? ipAddress);
@@ -446,7 +494,12 @@ export class SecployGate {
    * Blocked requests get a 403 and never reach the route. Gate failures call
    * `next()` so an outage cannot take the application down with it.
    */
-  express(options: { statusCode?: number; onBlocked?: (req: any, res: any, error: SecurityGateBlocked) => void } = {}) {
+  express(
+    options: {
+      statusCode?: number;
+      onBlocked?: (req: any, res: any, error: SecurityGateBlocked) => void;
+    } = {},
+  ) {
     const statusCode = options.statusCode ?? 403;
     return (req: any, res: any, next: any) => {
       this.check(req)
@@ -457,7 +510,8 @@ export class SecployGate {
             return res.status(statusCode).json({
               error: "Forbidden",
               reason: error.reason,
-              controls: error.decision.controls?.map((c) => c.action_type) ?? [],
+              controls:
+                error.decision.controls?.map((c) => c.action_type) ?? [],
             });
           }
           next(error);

@@ -47,7 +47,8 @@ export class GlobalErrorHandlers {
 
   install(): void {
     if (this.installed) return;
-    if (typeof process === "undefined" || typeof process.on !== "function") return;
+    if (typeof process === "undefined" || typeof process.on !== "function")
+      return;
 
     this.onUncaught = (error: Error) => {
       this.report(error, "uncaughtException", true);
@@ -67,8 +68,10 @@ export class GlobalErrorHandlers {
   uninstall(): void {
     if (!this.installed) return;
 
-    if (this.onUncaught) process.removeListener("uncaughtException", this.onUncaught);
-    if (this.onRejection) process.removeListener("unhandledRejection", this.onRejection);
+    if (this.onUncaught)
+      process.removeListener("uncaughtException", this.onUncaught);
+    if (this.onRejection)
+      process.removeListener("unhandledRejection", this.onRejection);
 
     this.onUncaught = null;
     this.onRejection = null;
@@ -94,7 +97,10 @@ export class GlobalErrorHandlers {
       // A crash inside the crash reporter must not replace the crash. Say so
       // and get out of the way.
       // eslint-disable-next-line no-console
-      console.error("[secploy] Failed to report an uncaught error:", reportingFailure);
+      console.error(
+        "[secploy] Failed to report an uncaught error:",
+        reportingFailure,
+      );
       if (fatal) this.rethrow(thrown);
       return;
     }
@@ -136,7 +142,8 @@ export class GlobalErrorHandlers {
     // Outside the handler, so the default action applies rather than
     // re-entering this same listener.
     setTimeout(() => {
-      if (this.onUncaught) process.removeListener("uncaughtException", this.onUncaught);
+      if (this.onUncaught)
+        process.removeListener("uncaughtException", this.onUncaught);
       throw thrown;
     }, 0);
   }

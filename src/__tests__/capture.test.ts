@@ -76,7 +76,9 @@ describe("captureException", () => {
     client.captureException(new Error("boom"));
 
     const frames = queued(client)[0].payload.context.frames;
-    expect(frames.every((frame: any) => typeof frame.in_app === "boolean")).toBe(true);
+    expect(
+      frames.every((frame: any) => typeof frame.in_app === "boolean"),
+    ).toBe(true);
   });
 
   it("puts the failing frame last, where the ingest looks for it", () => {
@@ -108,7 +110,10 @@ describe("captureException", () => {
   });
 
   it("carries extra context through", () => {
-    client.captureException(new Error("boom"), { order_id: "4821", tenant: "acme" });
+    client.captureException(new Error("boom"), {
+      order_id: "4821",
+      tenant: "acme",
+    });
 
     const context = queued(client)[0].payload.context;
     expect(context.order_id).toBe("4821");
@@ -216,7 +221,9 @@ describe("console capture", () => {
   });
 
   it("turns console.error(err) into a reported issue", () => {
-    const spy = jest.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const spy = jest
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
     client = makeClient({ captureConsole: true });
 
     console.error(new RangeError("out of bounds"));
@@ -301,7 +308,11 @@ describe("global handlers", () => {
   it("report a rejection through the client", async () => {
     const client = makeClient({ captureUncaught: true });
 
-    process.emit("unhandledRejection", new Error("promise died"), Promise.resolve());
+    process.emit(
+      "unhandledRejection",
+      new Error("promise died"),
+      Promise.resolve(),
+    );
 
     const events = queued(client).filter(
       (event) => event.payload?.context?.exception_value === "promise died",

@@ -90,8 +90,14 @@ export class RealtimeChannel {
 
   private loadWebSocket(): any {
     try {
-      // Resolved at call time so the dependency stays genuinely optional.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      // Resolved at call time so the dependency stays genuinely optional: a
+      // static import would make `ws` mandatory for every consumer, including
+      // the browser builds that never open a socket.
+      //
+      // The rule is no-require-imports, not no-var-requires — typescript-eslint
+      // v8 renamed it, so the old suppression silently stopped matching and
+      // this became a lint error.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       return require("ws");
     } catch {
       return null;
@@ -104,7 +110,10 @@ export class RealtimeChannel {
     try {
       this.ws = new WebSocketImpl(this.wsUrl, { headers: this.getHeaders() });
     } catch (error) {
-      console.warn(`[secploy] ${this.channelName} WebSocket failed to open:`, error);
+      console.warn(
+        `[secploy] ${this.channelName} WebSocket failed to open:`,
+        error,
+      );
       this.scheduleReconnect(WebSocketImpl);
       return;
     }
@@ -129,16 +138,25 @@ export class RealtimeChannel {
         const result = this.onUpdate();
         if (result && typeof (result as Promise<void>).catch === "function") {
           (result as Promise<void>).catch((error) =>
-            console.warn(`[secploy] ${this.channelName} update handler failed:`, error),
+            console.warn(
+              `[secploy] ${this.channelName} update handler failed:`,
+              error,
+            ),
           );
         }
       } catch (error) {
-        console.warn(`[secploy] ${this.channelName} update handler failed:`, error);
+        console.warn(
+          `[secploy] ${this.channelName} update handler failed:`,
+          error,
+        );
       }
     });
 
     this.ws.on("error", (error: any) => {
-      console.warn(`[secploy] ${this.channelName} WebSocket error:`, error?.message ?? error);
+      console.warn(
+        `[secploy] ${this.channelName} WebSocket error:`,
+        error?.message ?? error,
+      );
     });
 
     this.ws.on("close", () => {

@@ -6,21 +6,27 @@ describe("normalizeAuthContext", () => {
   it("accepts camelCase", () => {
     // The session comes back hashed - see the session-hashing test below - so
     // this compares against that rather than the raw input.
-    expect(normalizeAuthContext({ identityKey: "u1", sessionId: "s1" })).toEqual({
+    expect(
+      normalizeAuthContext({ identityKey: "u1", sessionId: "s1" }),
+    ).toEqual({
       identityKey: "u1",
       sessionId: hashSessionId("s1"),
     });
   });
 
   it("accepts snake_case", () => {
-    expect(normalizeAuthContext({ identity_key: "u1", session_id: "s1" })).toEqual({
+    expect(
+      normalizeAuthContext({ identity_key: "u1", session_id: "s1" }),
+    ).toEqual({
       identityKey: "u1",
       sessionId: hashSessionId("s1"),
     });
   });
 
   it("prefers camelCase when both are given", () => {
-    expect(normalizeAuthContext({ identityKey: "camel", identity_key: "snake" })).toEqual({
+    expect(
+      normalizeAuthContext({ identityKey: "camel", identity_key: "snake" }),
+    ).toEqual({
       identityKey: "camel",
     });
   });
@@ -39,7 +45,9 @@ describe("normalizeAuthContext", () => {
 
   it("accepts the avater misspelling", () => {
     // The Python SDK's public register_identity accepts both spellings.
-    expect(normalizeAuthContext({ avater: "http://x/a.png" }).avatar).toBe("http://x/a.png");
+    expect(normalizeAuthContext({ avater: "http://x/a.png" }).avatar).toBe(
+      "http://x/a.png",
+    );
   });
 
   it("handles null and non-objects", () => {
@@ -76,13 +84,17 @@ describe("snake_case callers still get enforcement", () => {
   }
 
   it("blocks on camelCase auth", () => {
-    expect(cache().evaluate("GET", "/x", { identityKey: "user-1" })!.blocked).toBe(true);
+    expect(
+      cache().evaluate("GET", "/x", { identityKey: "user-1" })!.blocked,
+    ).toBe(true);
   });
 
   it("blocks on snake_case auth", () => {
     // An unrecognized spelling would match no controls and silently let the
     // request through, which is the worst possible way for a gate to fail.
-    expect(cache().evaluate("GET", "/x", { identity_key: "user-1" })!.blocked).toBe(true);
+    expect(
+      cache().evaluate("GET", "/x", { identity_key: "user-1" })!.blocked,
+    ).toBe(true);
   });
 
   it("blocks on snake_case session and ip too", () => {
@@ -90,7 +102,13 @@ describe("snake_case callers still get enforcement", () => {
       ...policy,
       // Targeted on the hashed session, because that is what the SDK reported
       // and therefore what the control was created against.
-      controls: [{ ...policy.controls[0], target_type: "session", target: hashSessionId("s-1") }],
+      controls: [
+        {
+          ...policy.controls[0],
+          target_type: "session",
+          target: hashSessionId("s-1"),
+        },
+      ],
     };
     const c = new SecurityPolicyCache({
       apiUrl: "https://api.secploy.com",
@@ -106,7 +124,9 @@ describe("session hashing", () => {
     // A session cookie is a live credential: whoever reads one out of an event
     // store can replay it. The hash keeps what the product needs - a stable,
     // unique handle for the session - and removes what it never needed.
-    const normalized = normalizeAuthContext({ sessionId: "django-sessionid-abc123" });
+    const normalized = normalizeAuthContext({
+      sessionId: "django-sessionid-abc123",
+    });
 
     expect(normalized.sessionId).not.toBe("django-sessionid-abc123");
     expect(normalized.sessionId).toMatch(/^sess_[0-9a-f]{32}$/);
@@ -134,6 +154,8 @@ describe("session hashing", () => {
   });
 
   it("leaves an absent session absent", () => {
-    expect(normalizeAuthContext({ identityKey: "u1" })).not.toHaveProperty("sessionId");
+    expect(normalizeAuthContext({ identityKey: "u1" })).not.toHaveProperty(
+      "sessionId",
+    );
   });
 });

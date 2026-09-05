@@ -36,20 +36,60 @@ export const REDACTED = "[secploy:redacted]";
  * "API-Key", "api_key" and "apiKey" are one entry rather than three.
  */
 export const DEFAULT_DENY_KEYS: ReadonlySet<string> = new Set([
-  "password", "passwd", "pwd", "passphrase",
-  "secret", "clientsecret", "appsecret",
-  "token", "accesstoken", "refreshtoken", "idtoken", "bearertoken",
-  "apikey", "apisecret", "apitoken", "xapikey",
-  "auth", "authorization", "proxyauthorization",
-  "cookie", "cookies", "setcookie",
-  "sessionkey", "sessiontoken", "sessid", "sid",
-  "csrf", "csrftoken", "xsrftoken",
-  "privatekey", "publickey", "signingkey", "encryptionkey", "signature",
-  "credentials", "credential",
-  "creditcard", "cardnumber", "cardnum", "cvv", "cvc", "pin",
-  "ssn", "socialsecurity", "socialsecuritynumber", "taxid",
-  "otp", "mfacode", "totp", "twofactorcode",
-  "dbpassword", "databaseurl", "connectionstring", "dsn",
+  "password",
+  "passwd",
+  "pwd",
+  "passphrase",
+  "secret",
+  "clientsecret",
+  "appsecret",
+  "token",
+  "accesstoken",
+  "refreshtoken",
+  "idtoken",
+  "bearertoken",
+  "apikey",
+  "apisecret",
+  "apitoken",
+  "xapikey",
+  "auth",
+  "authorization",
+  "proxyauthorization",
+  "cookie",
+  "cookies",
+  "setcookie",
+  "sessionkey",
+  "sessiontoken",
+  "sessid",
+  "sid",
+  "csrf",
+  "csrftoken",
+  "xsrftoken",
+  "privatekey",
+  "publickey",
+  "signingkey",
+  "encryptionkey",
+  "signature",
+  "credentials",
+  "credential",
+  "creditcard",
+  "cardnumber",
+  "cardnum",
+  "cvv",
+  "cvc",
+  "pin",
+  "ssn",
+  "socialsecurity",
+  "socialsecuritynumber",
+  "taxid",
+  "otp",
+  "mfacode",
+  "totp",
+  "twofactorcode",
+  "dbpassword",
+  "databaseurl",
+  "connectionstring",
+  "dsn",
 ]);
 
 /**
@@ -59,7 +99,10 @@ export const DEFAULT_DENY_KEYS: ReadonlySet<string> = new Set([
  * otherwise catch - and it must not, because it is how a session is recognised
  * across events. It arrives here already hashed.
  */
-export const EXEMPT_KEYS: ReadonlySet<string> = new Set(["sessionid", "identitykey"]);
+export const EXEMPT_KEYS: ReadonlySet<string> = new Set([
+  "sessionid",
+  "identitykey",
+]);
 
 /**
  * Value shapes worth removing wherever they appear, including inside a message
@@ -109,7 +152,9 @@ const HASHED_SESSION = /^sess_[0-9a-f]{32}$/;
 
 /** Lowercase a key and drop separators, so naming style stops mattering. */
 export function normalizeKey(key: unknown): string {
-  return String(key).toLowerCase().replace(/[^a-z0-9]/g, "");
+  return String(key)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
 /** The checksum every real card number satisfies. */
@@ -182,7 +227,10 @@ export function hashSessionId(value: unknown): string {
   // fail, so applying it twice has to be the same as applying it once.
   if (HASHED_SESSION.test(text)) return text;
 
-  return "sess_" + createHash("sha256").update(text, "utf8").digest("hex").slice(0, 32);
+  return (
+    "sess_" +
+    createHash("sha256").update(text, "utf8").digest("hex").slice(0, 32)
+  );
 }
 
 export interface ScrubberOptions {
@@ -248,7 +296,9 @@ export class Scrubber {
       // budget.
       if (seen.has(value)) return "[secploy:circular]";
       seen.add(value);
-      return value.slice(0, MAX_ITEMS).map((item) => this.walk(item, depth + 1, seen));
+      return value
+        .slice(0, MAX_ITEMS)
+        .map((item) => this.walk(item, depth + 1, seen));
     }
 
     if (typeof value === "object") {
@@ -269,7 +319,8 @@ export class Scrubber {
       let index = 0;
       for (const key of Object.keys(value as Record<string, unknown>)) {
         if (index >= MAX_ITEMS) {
-          scrubbed["[secploy:truncated]"] = Object.keys(value as object).length - MAX_ITEMS;
+          scrubbed["[secploy:truncated]"] =
+            Object.keys(value as object).length - MAX_ITEMS;
           break;
         }
         index++;

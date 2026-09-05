@@ -12,7 +12,11 @@ import {
 jest.mock("axios");
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-function response(status: number, data: unknown = {}, headers: Record<string, string> = {}) {
+function response(
+  status: number,
+  data: unknown = {},
+  headers: Record<string, string> = {},
+) {
   return { status, data, headers };
 }
 
@@ -87,7 +91,14 @@ describe("parseRetryAfter", () => {
   });
 
   it("falls back to our own backoff when the value is absent or unreadable", () => {
-    for (const value of [null, undefined, "", "Wed, 21 Oct 2026 07:28:00 GMT", "soon", "-1"]) {
+    for (const value of [
+      null,
+      undefined,
+      "",
+      "Wed, 21 Oct 2026 07:28:00 GMT",
+      "soon",
+      "-1",
+    ]) {
       expect(parseRetryAfter(value)).toBeNull();
     }
   });
@@ -100,13 +111,17 @@ describe("parseRetryAfter", () => {
 describe("backoffDelay", () => {
   it("grows with the attempt number", () => {
     const atCeiling = () => 1;
-    expect(backoffDelay(4, null, atCeiling)).toBeGreaterThan(backoffDelay(0, null, atCeiling));
+    expect(backoffDelay(4, null, atCeiling)).toBeGreaterThan(
+      backoffDelay(0, null, atCeiling),
+    );
   });
 
   it("is capped", () => {
     const atCeiling = () => 1;
     for (let attempt = 0; attempt < 40; attempt++) {
-      expect(backoffDelay(attempt, null, atCeiling)).toBeLessThanOrEqual(MAX_BACKOFF_MS);
+      expect(backoffDelay(attempt, null, atCeiling)).toBeLessThanOrEqual(
+        MAX_BACKOFF_MS,
+      );
     }
   });
 
@@ -165,11 +180,13 @@ describe("EventQueue", () => {
     // The ring buffer's one real hazard: indices wrapping and reordering the
     // queue. Cycle it several times over.
     const queue = new EventQueue(4);
-    for (let i = 0; i < 3; i++) queue.enqueue({ type: "e", payload: { i }, timestamp: i });
+    for (let i = 0; i < 3; i++)
+      queue.enqueue({ type: "e", payload: { i }, timestamp: i });
     expect(queue.dequeue()?.payload).toEqual({ i: 0 });
     expect(queue.dequeue()?.payload).toEqual({ i: 1 });
 
-    for (let i = 3; i < 8; i++) queue.enqueue({ type: "e", payload: { i }, timestamp: i });
+    for (let i = 3; i < 8; i++)
+      queue.enqueue({ type: "e", payload: { i }, timestamp: i });
 
     const drained: number[] = [];
     let event = queue.dequeue();
@@ -234,7 +251,10 @@ describe("EventProcessor delivery", () => {
   async function drain(expectedCalls: number, timeoutMs = 4000): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     processor.start();
-    while (mockedAxios.post.mock.calls.length < expectedCalls && Date.now() < deadline) {
+    while (
+      mockedAxios.post.mock.calls.length < expectedCalls &&
+      Date.now() < deadline
+    ) {
       await new Promise((resolve) => setTimeout(resolve, 20));
     }
   }
@@ -248,7 +268,8 @@ describe("EventProcessor delivery", () => {
     await drain(1);
 
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-    const sent = (mockedAxios.post.mock.calls[0][1] as { events: any[] }).events;
+    const sent = (mockedAxios.post.mock.calls[0][1] as { events: any[] })
+      .events;
     expect(sent.map((e) => e.payload.message)).toEqual(["one", "two"]);
   });
 
@@ -257,13 +278,21 @@ describe("EventProcessor delivery", () => {
     // which does not run when the queue is empty. On a quiet application a
     // single event sat unsent until the next one happened to arrive.
     mockedAxios.post.mockResolvedValue(response(200));
-    processor = new EventProcessor(queue, "https://ingest.example.com/ingest", () => ({}), 100, 0, 3);
+    processor = new EventProcessor(
+      queue,
+      "https://ingest.example.com/ingest",
+      () => ({}),
+      100,
+      0,
+      3,
+    );
 
     new EventHandler(queue).sendEvent("error", { message: "alone" });
     await drain(1);
 
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-    const sent = (mockedAxios.post.mock.calls[0][1] as { events: any[] }).events;
+    const sent = (mockedAxios.post.mock.calls[0][1] as { events: any[] })
+      .events;
     expect(sent.map((e) => e.payload.message)).toEqual(["alone"]);
   });
 
@@ -274,7 +303,14 @@ describe("EventProcessor delivery", () => {
       .mockResolvedValueOnce(response(400, { error: "invalid payload" }))
       .mockResolvedValue(response(200));
 
-    processor = new EventProcessor(queue, "https://ingest.example.com/ingest", () => ({}), 1, 0, 3);
+    processor = new EventProcessor(
+      queue,
+      "https://ingest.example.com/ingest",
+      () => ({}),
+      1,
+      0,
+      3,
+    );
     const handler = new EventHandler(queue);
     for (const message of ["poison", "good-1", "good-2"]) {
       handler.sendEvent("error", { message });
@@ -347,7 +383,8 @@ describe("EventProcessor delivery", () => {
     });
 
     const handler = new EventHandler(queue);
-    for (let i = 0; i < 20; i++) handler.sendEvent("error", { message: `e-${i}` });
+    for (let i = 0; i < 20; i++)
+      handler.sendEvent("error", { message: `e-${i}` });
 
     await drain(5, 5000);
 
@@ -361,7 +398,8 @@ describe("EventProcessor delivery", () => {
     });
 
     const handler = new EventHandler(queue);
-    for (let i = 0; i < 20; i++) handler.sendEvent("error", { message: `e-${i}` });
+    for (let i = 0; i < 20; i++)
+      handler.sendEvent("error", { message: `e-${i}` });
 
     await drain(10, 5000);
     await processor.stop();
@@ -398,7 +436,8 @@ describe("EventProcessor shutdown", () => {
 
     processor.start();
     const handler = new EventHandler(queue);
-    for (const message of ["a", "b", "c"]) handler.sendEvent("error", { message });
+    for (const message of ["a", "b", "c"])
+      handler.sendEvent("error", { message });
 
     await processor.stop();
 

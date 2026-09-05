@@ -69,8 +69,14 @@ class RealtimeChannel {
     }
     loadWebSocket() {
         try {
-            // Resolved at call time so the dependency stays genuinely optional.
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            // Resolved at call time so the dependency stays genuinely optional: a
+            // static import would make `ws` mandatory for every consumer, including
+            // the browser builds that never open a socket.
+            //
+            // The rule is no-require-imports, not no-var-requires — typescript-eslint
+            // v8 renamed it, so the old suppression silently stopped matching and
+            // this became a lint error.
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             return require("ws");
         }
         catch {

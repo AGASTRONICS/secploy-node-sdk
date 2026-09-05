@@ -28,7 +28,11 @@ import { RealtimeChannel } from "./realtime";
 import { normalizeAuthContext } from "./authContext";
 
 /** Matches the server: a control is enforceable in these states. */
-const ACTIVE_CONTROL_STATUSES = new Set(["pending", "applied", "requires_adapter"]);
+const ACTIVE_CONTROL_STATUSES = new Set([
+  "pending",
+  "applied",
+  "requires_adapter",
+]);
 
 const DEFAULT_FETCH_TIMEOUT_MS = 10_000;
 
@@ -96,7 +100,9 @@ export class PolicySnapshot {
     let ruleCount = 0;
     for (const rule of payload?.blocked_endpoints ?? []) {
       if (!rule || typeof rule !== "object") continue;
-      const method = String(rule.method ?? "").trim().toUpperCase();
+      const method = String(rule.method ?? "")
+        .trim()
+        .toUpperCase();
       const raw = String(rule.path_pattern ?? "");
       const bucket = this.rulesByMethod.get(method) ?? [];
       bucket.push({ regex: compilePattern(raw), raw, rule });
@@ -154,7 +160,9 @@ function controlMatchesEndpointScope(
   const scope = indexed.control.metadata?.endpoint_scope;
   if (!scope || typeof scope !== "object") return true;
 
-  const scopedMethod = String(scope.method ?? "").trim().toUpperCase();
+  const scopedMethod = String(scope.method ?? "")
+    .trim()
+    .toUpperCase();
   if (scopedMethod && scopedMethod !== method) return false;
 
   // Method-only scope, already satisfied.
@@ -205,7 +213,9 @@ export class SecurityPolicyCache {
    * it just means the previous snapshot stays in force. Concurrent calls share
    * one request.
    */
-  async fetch(timeoutMs = DEFAULT_FETCH_TIMEOUT_MS): Promise<PolicySnapshot | null> {
+  async fetch(
+    timeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
+  ): Promise<PolicySnapshot | null> {
     if (this.inFlight) return this.inFlight;
 
     this.inFlight = this.doFetch(timeoutMs).finally(() => {
@@ -247,18 +257,24 @@ export class SecurityPolicyCache {
     }
 
     if (response.status === 401) {
-      console.warn("[secploy] Security policy fetch: invalid API key or environment key.");
+      console.warn(
+        "[secploy] Security policy fetch: invalid API key or environment key.",
+      );
       return current;
     }
 
     if (response.status < 200 || response.status >= 300) {
-      console.warn(`[secploy] Security policy fetch failed (${response.status}).`);
+      console.warn(
+        `[secploy] Security policy fetch failed (${response.status}).`,
+      );
       return current;
     }
 
     const payload = response.data;
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      console.warn("[secploy] Security policy response had an unexpected shape.");
+      console.warn(
+        "[secploy] Security policy response had an unexpected shape.",
+      );
       return current;
     }
 
@@ -333,7 +349,8 @@ export class SecurityPolicyCache {
     method: string,
     endpoint: string,
   ): BlockedEndpointRule | null {
-    for (const { regex, raw, rule } of snapshot.rulesByMethod.get(method) ?? []) {
+    for (const { regex, raw, rule } of snapshot.rulesByMethod.get(method) ??
+      []) {
       if (regex === null) {
         if (raw === endpoint) return rule;
         continue;
@@ -367,7 +384,8 @@ export class SecurityPolicyCache {
     push("session", sessionId);
     for (const value of new Set([identityKey, userId])) push("identity", value);
     for (const value of new Set([ipAddress, remoteAddr])) push("ip", value);
-    for (const value of new Set([clean(projectKey), clean(envKey)])) push("api_key", value);
+    for (const value of new Set([clean(projectKey), clean(envKey)]))
+      push("api_key", value);
 
     if (lookups.length === 0) return [];
 
@@ -376,7 +394,9 @@ export class SecurityPolicyCache {
 
     for (const key of lookups) {
       for (const indexed of snapshot.controlsByTarget.get(key) ?? []) {
-        const controlId = String(indexed.control.id ?? `${key}:${indexed.order}`);
+        const controlId = String(
+          indexed.control.id ?? `${key}:${indexed.order}`,
+        );
         if (matched.has(controlId)) continue;
 
         // The snapshot can outlive a control's expiry by up to its TTL, so
@@ -406,7 +426,10 @@ export class SecurityPolicyCache {
     );
   }
 
-  startRealtime(wsUrl: string, headersCallback: () => Record<string, string>): void {
+  startRealtime(
+    wsUrl: string,
+    headersCallback: () => Record<string, string>,
+  ): void {
     if (this.realtime !== null) {
       console.warn("[secploy] Security policy real-time is already running.");
       return;

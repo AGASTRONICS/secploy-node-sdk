@@ -63,7 +63,10 @@ export function expressErrorHandler(client: ErrorReporter) {
     next: (error?: unknown) => void,
   ): void {
     try {
-      client.captureException(error, { ...requestContext(req), mechanism: "express" });
+      client.captureException(error, {
+        ...requestContext(req),
+        mechanism: "express",
+      });
     } catch {
       // Reporting must never replace the application's own error handling.
     }
@@ -79,7 +82,10 @@ export function expressErrorHandler(client: ErrorReporter) {
  * and a handled 500 is still an issue worth seeing.
  */
 export function koaErrorHandler(client: ErrorReporter) {
-  return async function secployErrorHandler(ctx: { request?: RequestLike } & RequestLike, next: () => Promise<void>) {
+  return async function secployErrorHandler(
+    ctx: { request?: RequestLike } & RequestLike,
+    next: () => Promise<void>,
+  ) {
     try {
       await next();
     } catch (error) {
@@ -110,7 +116,10 @@ export function fastifyErrorHandler(client: ErrorReporter) {
     done?: () => void,
   ): void {
     try {
-      client.captureException(error, { ...requestContext(request), mechanism: "fastify" });
+      client.captureException(error, {
+        ...requestContext(request),
+        mechanism: "fastify",
+      });
     } catch {
       // Reporting must never replace the application's own error handling.
     }

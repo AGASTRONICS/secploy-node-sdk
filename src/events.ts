@@ -171,7 +171,11 @@ export class EventHandler {
       // Scrubbing runs last so nothing the hook returned - including anything
       // it added - can escape unscrubbed.
       const scrubbed = this.scrubber.scrub(prepared);
-      if (!scrubbed || typeof scrubbed !== "object" || Array.isArray(scrubbed)) {
+      if (
+        !scrubbed ||
+        typeof scrubbed !== "object" ||
+        Array.isArray(scrubbed)
+      ) {
         // The scrubber refused the payload outright.
         return false;
       }
@@ -182,7 +186,10 @@ export class EventHandler {
         // carries the same ids, which is what lets the ingest recognise a
         // redelivery and not count the occurrence twice - and occurrence
         // counts are the whole point of grouping.
-        payload: { event_id: randomUUID(), ...(scrubbed as Record<string, any>) },
+        payload: {
+          event_id: randomUUID(),
+          ...(scrubbed as Record<string, any>),
+        },
         timestamp: Date.now(),
       };
       this.queue.enqueue(event);
@@ -200,19 +207,26 @@ export class EventHandler {
    * rather than dropped: a broken filter should cost visibility into the
    * filter, not into the application.
    */
-  private applyBeforeSend(payload: Record<string, any>): Record<string, any> | null {
+  private applyBeforeSend(
+    payload: Record<string, any>,
+  ): Record<string, any> | null {
     let result: ReturnType<BeforeSend>;
     try {
       result = this.beforeSend!({ ...payload });
     } catch (error) {
-      console.error("[secploy] beforeSend threw, keeping the event as-is:", error);
+      console.error(
+        "[secploy] beforeSend threw, keeping the event as-is:",
+        error,
+      );
       return payload;
     }
 
     if (result === null) return null;
     if (result === undefined) return payload;
     if (typeof result !== "object" || Array.isArray(result)) {
-      console.error("[secploy] beforeSend must return an object or null; keeping the event as-is");
+      console.error(
+        "[secploy] beforeSend must return an object or null; keeping the event as-is",
+      );
       return payload;
     }
     return result;

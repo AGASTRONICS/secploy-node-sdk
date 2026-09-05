@@ -80,8 +80,10 @@ class EventProcessor {
                 retryAfterMs: (0, transport_1.parseRetryAfter)(response.headers?.["retry-after"]),
             };
         }
-        catch (error) {
-            // No response at all: connection refused, DNS failure, timeout.
+        catch {
+            // No response at all: connection refused, DNS failure, timeout. The error
+            // is deliberately not inspected — every one of these is retryable, and
+            // branching on the message would couple us to the HTTP client's wording.
             return { outcome: "retry", retryAfterMs: null };
         }
     }

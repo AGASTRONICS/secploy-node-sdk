@@ -33,14 +33,18 @@ describe("Secploy", () => {
   });
 
   it("requires each credential", () => {
-    expect(() => new Secploy({ ...config, apiKey: "" })).toThrow("API key is required");
+    expect(() => new Secploy({ ...config, apiKey: "" })).toThrow(
+      "API key is required",
+    );
     expect(() => new Secploy({ ...config, environmentKey: "" })).toThrow(
       "Environment key is required",
     );
     expect(() => new Secploy({ ...config, organizationId: "" })).toThrow(
       "Organization ID is required",
     );
-    expect(() => new Secploy({ ...config, ingestUrl: "" })).toThrow("Ingest URL is required");
+    expect(() => new Secploy({ ...config, ingestUrl: "" })).toThrow(
+      "Ingest URL is required",
+    );
   });
 
   it("rejects an unknown gate mode", () => {

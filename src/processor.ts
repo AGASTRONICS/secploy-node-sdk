@@ -81,7 +81,10 @@ export class EventProcessor {
    */
   private async post(
     events: EventData[],
-  ): Promise<{ outcome: ReturnType<typeof classifyStatus>; retryAfterMs: number | null }> {
+  ): Promise<{
+    outcome: ReturnType<typeof classifyStatus>;
+    retryAfterMs: number | null;
+  }> {
     try {
       const response = await axios.post(
         this.ingestUrl,
@@ -110,8 +113,10 @@ export class EventProcessor {
         outcome,
         retryAfterMs: parseRetryAfter(response.headers?.["retry-after"]),
       };
-    } catch (error) {
-      // No response at all: connection refused, DNS failure, timeout.
+    } catch {
+      // No response at all: connection refused, DNS failure, timeout. The error
+      // is deliberately not inspected — every one of these is retryable, and
+      // branching on the message would couple us to the HTTP client's wording.
       return { outcome: "retry", retryAfterMs: null };
     }
   }
@@ -128,7 +133,10 @@ export class EventProcessor {
    * server has refused on its content; that is what turned a single malformed
    * event into a permanently stuck pipeline.
    */
-  private async sendBatch(events: EventData[], maxAttempts?: number): Promise<boolean> {
+  private async sendBatch(
+    events: EventData[],
+    maxAttempts?: number,
+  ): Promise<boolean> {
     if (events.length === 0) return true;
 
     const attempts = maxAttempts ?? this.maxRetry;
@@ -170,7 +178,10 @@ export class EventProcessor {
 
   private shouldFlush(now: number): boolean {
     if (this.eventBatch.size >= this.batchSize) return true;
-    return this.eventBatch.size > 0 && now - this.eventBatch.lastFlush >= this.flushInterval;
+    return (
+      this.eventBatch.size > 0 &&
+      now - this.eventBatch.lastFlush >= this.flushInterval
+    );
   }
 
   /**

@@ -16,7 +16,9 @@ import { SecurityGateAuthContext } from "./types";
 import { hashSessionId } from "./scrubbing";
 
 /** camelCase field -> the snake_case spelling also accepted for it. */
-export const AUTH_FIELD_ALIASES: ReadonlyArray<[keyof SecurityGateAuthContext, string]> = [
+export const AUTH_FIELD_ALIASES: ReadonlyArray<
+  [keyof SecurityGateAuthContext, string]
+> = [
   ["identityKey", "identity_key"],
   ["userId", "user_id"],
   ["sessionId", "session_id"],
@@ -44,7 +46,8 @@ export function normalizeAuthContext(
 
   for (const [field, alias] of AUTH_FIELD_ALIASES) {
     const value = source[field as string] ?? source[alias];
-    if (value !== undefined && value !== null) normalized[field as string] = value;
+    if (value !== undefined && value !== null)
+      normalized[field as string] = value;
   }
 
   // "avater" is accepted because the Python SDK's public register_identity does.

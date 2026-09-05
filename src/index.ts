@@ -1,13 +1,17 @@
 import { SecployConfig, LogLevel, LogHandler } from "./types";
 import { DEFAULT_MAX_QUEUE_SIZE, EventQueue, EventHandler } from "./events";
-import { Scrubber, hashSessionId } from "./scrubbing";
+import { Scrubber } from "./scrubbing";
 import { EventProcessor } from "./processor";
 import { SecurityPolicyCache } from "./policyCache";
 import { IdentityReporter } from "./identityReporter";
 import { SecployGate } from "./gate";
 import { ParsedError, parseError } from "./errors";
 import { GlobalErrorHandlers } from "./instrument";
-import { expressErrorHandler, fastifyErrorHandler, koaErrorHandler } from "./errorHandlers";
+import {
+  expressErrorHandler,
+  fastifyErrorHandler,
+  koaErrorHandler,
+} from "./errorHandlers";
 
 const DEFAULT_CONFIG: Partial<SecployConfig> = {
   environment: "development",
@@ -118,7 +122,10 @@ export class Secploy {
       this.config.maxRetry,
     );
 
-    const apiUrl = (this.config.apiUrl ?? "https://api.secploy.com").replace(/\/$/, "");
+    const apiUrl = (this.config.apiUrl ?? "https://api.secploy.com").replace(
+      /\/$/,
+      "",
+    );
 
     this.securityPolicy = new SecurityPolicyCache({
       apiUrl,
@@ -177,7 +184,10 @@ export class Secploy {
         try {
           this.securityPolicy.startRealtime(wsUrl, () => this.getHeaders());
         } catch (error) {
-          console.warn("[secploy] Security policy real-time failed to start:", error);
+          console.warn(
+            "[secploy] Security policy real-time failed to start:",
+            error,
+          );
         }
       });
 
@@ -232,7 +242,9 @@ export class Secploy {
 
         try {
           const message = args
-            .map((arg) => (typeof arg === "object" ? safeStringify(arg) : String(arg)))
+            .map((arg) =>
+              typeof arg === "object" ? safeStringify(arg) : String(arg),
+            )
             .join(" ");
 
           this.logHandlers.forEach((handler) => {
@@ -271,7 +283,10 @@ export class Secploy {
    * One place builds the payload so a crash, a console.error and an explicit
    * captureException all arrive in the same shape and group together.
    */
-  private reportError(parsed: ParsedError, context: Record<string, unknown> = {}): string | null {
+  private reportError(
+    parsed: ParsedError,
+    context: Record<string, unknown> = {},
+  ): string | null {
     try {
       const payload: Record<string, any> = {
         message: `${parsed.type}: ${parsed.value}`,
@@ -313,7 +328,10 @@ export class Secploy {
    * promise carrying a plain object is not unusual. Whatever arrives becomes a
    * report rather than a second failure inside the reporter.
    */
-  captureException(thrown: unknown, context: Record<string, unknown> = {}): void {
+  captureException(
+    thrown: unknown,
+    context: Record<string, unknown> = {},
+  ): void {
     this.reportError(parseError(thrown), {
       mechanism: "manual",
       handled: true,
@@ -460,7 +478,13 @@ export { IdentityReporter } from "./identityReporter";
 export { RealtimeChannel } from "./realtime";
 export { normalizeAuthContext } from "./authContext";
 export { shouldSend, neverSampled, actorKey, bucket } from "./sampling";
-export { Scrubber, hashSessionId, scrubString, normalizeKey, REDACTED } from "./scrubbing";
+export {
+  Scrubber,
+  hashSessionId,
+  scrubString,
+  normalizeKey,
+  REDACTED,
+} from "./scrubbing";
 export type { ScrubberOptions } from "./scrubbing";
 export type { BeforeSend } from "./events";
 export type {

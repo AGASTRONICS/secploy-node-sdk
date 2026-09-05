@@ -33,13 +33,20 @@ describe("normalizeError", () => {
   it("accepts a thrown string", () => {
     // `throw "nope"` is legal and happens. Reporting it as undefined would lose
     // exactly the failures nobody expected.
-    expect(normalizeError("nope")).toMatchObject({ type: "Error", value: "nope" });
+    expect(normalizeError("nope")).toMatchObject({
+      type: "Error",
+      value: "nope",
+    });
   });
 
   it("accepts a rejected error-shaped object", () => {
     // Plenty of libraries reject with something that has a message but is not
     // an Error.
-    const normalized = normalizeError({ name: "HttpError", message: "502 upstream", stack: "at x" });
+    const normalized = normalizeError({
+      name: "HttpError",
+      message: "502 upstream",
+      stack: "at x",
+    });
     expect(normalized.type).toBe("HttpError");
     expect(normalized.value).toBe("502 upstream");
   });
@@ -117,7 +124,10 @@ describe("parseStack", () => {
       "Error: x\n    at async loadOrder (/srv/app/a.js:1:1)\n    at new Widget (/srv/app/b.js:2:2)",
       ROOT,
     );
-    expect(frames.map((f) => f.function).sort()).toEqual(["Widget", "loadOrder"]);
+    expect(frames.map((f) => f.function).sort()).toEqual([
+      "Widget",
+      "loadOrder",
+    ]);
   });
 
   it("ignores lines that are not frames", () => {
@@ -131,14 +141,16 @@ describe("parseStack", () => {
 
   it("caps an enormous stack", () => {
     const lines = ["RangeError: Maximum call stack size exceeded"];
-    for (let i = 0; i < 500; i++) lines.push(`    at recurse (/srv/app/a.js:${i}:1)`);
+    for (let i = 0; i < 500; i++)
+      lines.push(`    at recurse (/srv/app/a.js:${i}:1)`);
     expect(parseStack(lines.join("\n"), ROOT).length).toBeLessThanOrEqual(50);
   });
 
   it("keeps the innermost frames when capping", () => {
     // Truncating the wrong end would discard the frames that identify the bug.
     const lines = ["Error: x", "    at innermost (/srv/app/deep.js:1:1)"];
-    for (let i = 0; i < 200; i++) lines.push(`    at outer${i} (/srv/app/a.js:${i}:1)`);
+    for (let i = 0; i < 200; i++)
+      lines.push(`    at outer${i} (/srv/app/a.js:${i}:1)`);
 
     const frames = parseStack(lines.join("\n"), ROOT);
     expect(frames[frames.length - 1].function).toBe("innermost");
@@ -154,7 +166,9 @@ describe("culpritFrom", () => {
   it("picks the innermost application frame", () => {
     // "Where is this bug" means our deepest line, not the framework internals
     // underneath it.
-    expect(culpritFrom(parseStack(V8_STACK, ROOT))).toBe("orders/service.js in loadOrder");
+    expect(culpritFrom(parseStack(V8_STACK, ROOT))).toBe(
+      "orders/service.js in loadOrder",
+    );
   });
 
   it("falls back to the innermost frame when nothing is in-app", () => {
@@ -233,7 +247,11 @@ describe("GlobalErrorHandlers", () => {
 
   it("captures an unhandled rejection", () => {
     handlers.install();
-    process.emit("unhandledRejection", new Error("promise died"), Promise.resolve());
+    process.emit(
+      "unhandledRejection",
+      new Error("promise died"),
+      Promise.resolve(),
+    );
 
     expect(captured).toHaveLength(1);
     expect(captured[0].parsed.value).toBe("promise died");
@@ -311,7 +329,12 @@ describe("framework error handlers", () => {
     const next = jest.fn();
     const error = new Error("route blew up");
 
-    expressErrorHandler(client)(error, { method: "get", originalUrl: "/orders/4821" }, {}, next);
+    expressErrorHandler(client)(
+      error,
+      { method: "get", originalUrl: "/orders/4821" },
+      {},
+      next,
+    );
 
     expect(client.calls).toHaveLength(1);
     expect(next).toHaveBeenCalledWith(error);
@@ -329,7 +352,11 @@ describe("framework error handlers", () => {
     const client = reporter();
     expressErrorHandler(client)(
       new Error("x"),
-      { method: "GET", originalUrl: "/users/4821", route: { path: "/users/:id" } },
+      {
+        method: "GET",
+        originalUrl: "/users/4821",
+        route: { path: "/users/:id" },
+      },
       {},
       jest.fn(),
     );
@@ -365,7 +392,9 @@ describe("framework error handlers", () => {
     const next = jest.fn();
     const error = new Error("route blew up");
 
-    expect(() => expressErrorHandler(broken)(error, {}, {}, next)).not.toThrow();
+    expect(() =>
+      expressErrorHandler(broken)(error, {}, {}, next),
+    ).not.toThrow();
     expect(next).toHaveBeenCalledWith(error);
   });
 
@@ -395,7 +424,12 @@ describe("framework error handlers", () => {
     const client = reporter();
     const done = jest.fn();
 
-    fastifyErrorHandler(client)({ method: "GET", url: "/x" }, {}, new Error("boom"), done);
+    fastifyErrorHandler(client)(
+      { method: "GET", url: "/x" },
+      {},
+      new Error("boom"),
+      done,
+    );
 
     expect(client.calls).toHaveLength(1);
     expect(done).toHaveBeenCalled();
@@ -404,7 +438,11 @@ describe("framework error handlers", () => {
   it("fastify works without a done callback", () => {
     const client = reporter();
     expect(() =>
-      fastifyErrorHandler(client)({ method: "GET", url: "/x" }, {}, new Error("boom")),
+      fastifyErrorHandler(client)(
+        { method: "GET", url: "/x" },
+        {},
+        new Error("boom"),
+      ),
     ).not.toThrow();
     expect(client.calls).toHaveLength(1);
   });
