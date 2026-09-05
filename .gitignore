@@ -1,0 +1,30 @@
+# Dependencies. These were tracked — 7,761 files — so every `npm install`
+# produced a diff of thousands of vendored files and buried real changes.
+# package-lock.json is what pins them, and that stays tracked.
+node_modules/
+
+# Test and build by-products
+coverage/
+*.tsbuildinfo
+
+# Local packs from `npm pack`
+*.tgz
+
+# Credentials and local overrides. Nothing here is tracked today; the entry is
+# to keep it that way, since this package talks to an API with a key.
+.env
+.env.*
+!.env.example
+.npmrc
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# NOT ignored, deliberately: dist/
+#
+# Only dist/ is published (see "files" in package.json), and it is committed so
+# the repo shows exactly what shipped. That makes it possible for dist/ to drift
+# from src/ — it already has — so rebuild before tagging. See DEPLOY.md.
