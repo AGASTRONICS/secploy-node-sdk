@@ -187,7 +187,7 @@ class Secploy {
                     original.apply(console, args);
                 try {
                     const message = args
-                        .map((arg) => (typeof arg === "object" ? safeStringify(arg) : String(arg)))
+                        .map((arg) => typeof arg === "object" ? safeStringify(arg) : String(arg))
                         .join(" ");
                     this.logHandlers.forEach((handler) => {
                         handler.handleLog(level, message);

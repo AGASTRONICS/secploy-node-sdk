@@ -102,7 +102,9 @@ function parseRetryAfter(value) {
  * ceiling, so a fleet of clients that failed together does not return together.
  */
 function backoffDelay(attempt, retryAfterMs, random = Math.random) {
-    if (retryAfterMs !== null && retryAfterMs !== undefined && retryAfterMs >= 0) {
+    if (retryAfterMs !== null &&
+        retryAfterMs !== undefined &&
+        retryAfterMs >= 0) {
         return Math.min(retryAfterMs, exports.MAX_RETRY_AFTER_MS);
     }
     const exponent = Math.max(0, Math.floor(attempt));

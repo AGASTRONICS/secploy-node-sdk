@@ -13,7 +13,10 @@
  */
 import { SecurityGateAuthContext } from "./types";
 /** camelCase field -> the snake_case spelling also accepted for it. */
-export declare const AUTH_FIELD_ALIASES: ReadonlyArray<[keyof SecurityGateAuthContext, string]>;
+export declare const AUTH_FIELD_ALIASES: ReadonlyArray<[
+    keyof SecurityGateAuthContext,
+    string
+]>;
 /**
  * Accept either spelling for every field and return the canonical camelCase
  * form. camelCase wins when both are present.

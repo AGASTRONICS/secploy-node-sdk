@@ -24,7 +24,11 @@ const axios_1 = __importDefault(require("axios"));
 const realtime_1 = require("./realtime");
 const authContext_1 = require("./authContext");
 /** Matches the server: a control is enforceable in these states. */
-const ACTIVE_CONTROL_STATUSES = new Set(["pending", "applied", "requires_adapter"]);
+const ACTIVE_CONTROL_STATUSES = new Set([
+    "pending",
+    "applied",
+    "requires_adapter",
+]);
 const DEFAULT_FETCH_TIMEOUT_MS = 10000;
 /**
  * How long a snapshot may go unrefreshed before warning. Enforcement continues
@@ -67,7 +71,9 @@ class PolicySnapshot {
         for (const rule of payload?.blocked_endpoints ?? []) {
             if (!rule || typeof rule !== "object")
                 continue;
-            const method = String(rule.method ?? "").trim().toUpperCase();
+            const method = String(rule.method ?? "")
+                .trim()
+                .toUpperCase();
             const raw = String(rule.path_pattern ?? "");
             const bucket = this.rulesByMethod.get(method) ?? [];
             bucket.push({ regex: compilePattern(raw), raw, rule });
@@ -119,7 +125,9 @@ function controlMatchesEndpointScope(indexed, method, endpoint) {
     const scope = indexed.control.metadata?.endpoint_scope;
     if (!scope || typeof scope !== "object")
         return true;
-    const scopedMethod = String(scope.method ?? "").trim().toUpperCase();
+    const scopedMethod = String(scope.method ?? "")
+        .trim()
+        .toUpperCase();
     if (scopedMethod && scopedMethod !== method)
         return false;
     // Method-only scope, already satisfied.
@@ -254,7 +262,8 @@ class SecurityPolicyCache {
     }
     /** First matching rule wins, in the snapshot's newest-first order. */
     matchRule(snapshot, method, endpoint) {
-        for (const { regex, raw, rule } of snapshot.rulesByMethod.get(method) ?? []) {
+        for (const { regex, raw, rule } of snapshot.rulesByMethod.get(method) ??
+            []) {
             if (regex === null) {
                 if (raw === endpoint)
                     return rule;

@@ -47,7 +47,10 @@ function requestContext(req) {
 function expressErrorHandler(client) {
     return function secployErrorHandler(error, req, _res, next) {
         try {
-            client.captureException(error, { ...requestContext(req), mechanism: "express" });
+            client.captureException(error, {
+                ...requestContext(req),
+                mechanism: "express",
+            });
         }
         catch {
             // Reporting must never replace the application's own error handling.
@@ -90,7 +93,10 @@ function koaErrorHandler(client) {
 function fastifyErrorHandler(client) {
     return function secployErrorHandler(request, _reply, error, done) {
         try {
-            client.captureException(error, { ...requestContext(request), mechanism: "fastify" });
+            client.captureException(error, {
+                ...requestContext(request),
+                mechanism: "fastify",
+            });
         }
         catch {
             // Reporting must never replace the application's own error handling.

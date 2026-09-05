@@ -131,7 +131,8 @@ class EventProcessor {
     shouldFlush(now) {
         if (this.eventBatch.size >= this.batchSize)
             return true;
-        return this.eventBatch.size > 0 && now - this.eventBatch.lastFlush >= this.flushInterval;
+        return (this.eventBatch.size > 0 &&
+            now - this.eventBatch.lastFlush >= this.flushInterval);
     }
     /**
      * Move everything currently queued into the batch, flushing whenever the

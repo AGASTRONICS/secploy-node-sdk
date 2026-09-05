@@ -40,15 +40,29 @@ exports.shouldSend = shouldSend;
 const crypto_1 = require("crypto");
 /** Event types that carry the signal this product exists for. */
 exports.ALWAYS_SENT_TYPES = new Set([
-    "error", "critical", "fatal", "warning", "warn", "exception",
+    "error",
+    "critical",
+    "fatal",
+    "warning",
+    "warn",
+    "exception",
 ]);
 /**
  * Namespaced security signals the SDK emits. These are deliberate - an
  * application calling out that something happened - and never volume traffic.
  */
 exports.ALWAYS_SENT_PREFIXES = [
-    "auth.", "account.", "security.", "access.", "data.", "secret.",
-    "incident.", "fraud.", "compliance.", "payment.", "api.abuse",
+    "auth.",
+    "account.",
+    "security.",
+    "access.",
+    "data.",
+    "secret.",
+    "incident.",
+    "fraud.",
+    "compliance.",
+    "payment.",
+    "api.abuse",
     "dependency_scan.",
 ];
 /**
@@ -56,21 +70,32 @@ exports.ALWAYS_SENT_PREFIXES = [
  * follows a person where it can and a machine otherwise.
  */
 exports.ACTOR_FIELDS = [
-    "identity_key", "user_id", "session_id", "ip_address", "remote_addr",
+    "identity_key",
+    "user_id",
+    "session_id",
+    "ip_address",
+    "remote_addr",
 ];
 /**
  * What the SDK fills in when it knows nothing. Treating these as an actor would
  * put every anonymous request in one bucket, so they would all be sampled in or
  * all out together.
  */
-const PLACEHOLDERS = new Set(["anonymous", "unknown", "none", ""]);
+const PLACEHOLDERS = new Set([
+    "anonymous",
+    "unknown",
+    "none",
+    "",
+]);
 /** Whether an event must be sent whatever the rate. */
 function neverSampled(eventType, hasStacktrace = false) {
     // A stacktrace is unambiguous evidence that something threw, whatever the
     // event was labelled.
     if (hasStacktrace)
         return true;
-    const normalized = String(eventType ?? "").trim().toLowerCase();
+    const normalized = String(eventType ?? "")
+        .trim()
+        .toLowerCase();
     if (exports.ALWAYS_SENT_TYPES.has(normalized))
         return true;
     return exports.ALWAYS_SENT_PREFIXES.some((prefix) => normalized.startsWith(prefix));

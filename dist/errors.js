@@ -138,7 +138,9 @@ function parseStack(stack, root = appRoot()) {
             function: fn,
             lineno,
             colno,
-            in_app: !isVendor(filename) && !filename.startsWith("<") && filename !== "native",
+            in_app: !isVendor(filename) &&
+                !filename.startsWith("<") &&
+                filename !== "native",
         });
     }
     // Keep the innermost frames, which are where the failure is - still V8's
@@ -166,7 +168,11 @@ function normalizeError(thrown) {
         return { type: "Error", value: thrown, stack: "" };
     }
     if (thrown === null || thrown === undefined) {
-        return { type: "Error", value: `Non-error thrown: ${String(thrown)}`, stack: "" };
+        return {
+            type: "Error",
+            value: `Non-error thrown: ${String(thrown)}`,
+            stack: "",
+        };
     }
     if (typeof thrown === "object") {
         // Some libraries reject with an error-shaped object that is not an Error.
@@ -189,9 +195,17 @@ function normalizeError(thrown) {
             // Circular, or a getter that throws. Never let describing a failure fail.
             described = Object.prototype.toString.call(thrown);
         }
-        return { type: "Error", value: `Non-error thrown: ${described}`.slice(0, 1000), stack: "" };
+        return {
+            type: "Error",
+            value: `Non-error thrown: ${described}`.slice(0, 1000),
+            stack: "",
+        };
     }
-    return { type: "Error", value: `Non-error thrown: ${String(thrown)}`, stack: "" };
+    return {
+        type: "Error",
+        value: `Non-error thrown: ${String(thrown)}`,
+        stack: "",
+    };
 }
 /**
  * Render frames back into the text form the ingest has always accepted.
@@ -205,8 +219,12 @@ function formatStack(type, value, frames) {
     // Back into V8's display order, so a person reading the raw event sees the
     // stack the way their runtime would have printed it.
     for (const frame of [...frames].reverse()) {
-        const where = frame.lineno !== null ? `${frame.filename}:${frame.lineno}:${frame.colno ?? 0}` : frame.filename;
-        lines.push(frame.function ? `    at ${frame.function} (${where})` : `    at ${where}`);
+        const where = frame.lineno !== null
+            ? `${frame.filename}:${frame.lineno}:${frame.colno ?? 0}`
+            : frame.filename;
+        lines.push(frame.function
+            ? `    at ${frame.function} (${where})`
+            : `    at ${where}`);
     }
     return lines;
 }
@@ -220,7 +238,9 @@ function parseError(thrown, root = appRoot()) {
         frames,
         // When there was no stack - a thrown string, a rejected plain object - the
         // formatted form is still emitted so the event is never blank.
-        stacktrace: stack ? stack.split("\n").filter((line) => line.trim() !== "") : formatStack(type, value, frames),
+        stacktrace: stack
+            ? stack.split("\n").filter((line) => line.trim() !== "")
+            : formatStack(type, value, frames),
     };
 }
 /**

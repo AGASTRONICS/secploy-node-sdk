@@ -89,7 +89,7 @@ export { IdentityReporter } from "./identityReporter";
 export { RealtimeChannel } from "./realtime";
 export { normalizeAuthContext } from "./authContext";
 export { shouldSend, neverSampled, actorKey, bucket } from "./sampling";
-export { Scrubber, hashSessionId, scrubString, normalizeKey, REDACTED } from "./scrubbing";
+export { Scrubber, hashSessionId, scrubString, normalizeKey, REDACTED, } from "./scrubbing";
 export type { ScrubberOptions } from "./scrubbing";
 export type { BeforeSend } from "./events";
 export type { BlockedEndpointRule, ControlAction, DecisionPayload, GateMode, PolicyPayload, SecployConfig, SecurityGateAuthContext, SecurityGateDecision, } from "./types";

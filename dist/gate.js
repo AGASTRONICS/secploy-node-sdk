@@ -27,7 +27,10 @@ class SecurityGateBlocked extends Error {
     constructor(decision) {
         const controls = decision.controls ?? [];
         const first = controls[0];
-        const parts = [`Secploy blocked ${decision.method} ${decision.endpoint}`, decision.reason];
+        const parts = [
+            `Secploy blocked ${decision.method} ${decision.endpoint}`,
+            decision.reason,
+        ];
         if (first?.action_type)
             parts.push(`${first.action_type} -> ${first.target}`);
         super(parts.filter(Boolean).join(" | "));
@@ -82,7 +85,9 @@ class SecployGate {
         const blocked = Boolean(payload?.blocked);
         const rule = payload?.rule ?? {};
         const controls = payload?.controls ?? payload?.actions ?? [];
-        const reason = payload?.reason || rule?.reason || (blocked ? "blocked_by_rule" : "allowed");
+        const reason = payload?.reason ||
+            rule?.reason ||
+            (blocked ? "blocked_by_rule" : "allowed");
         return {
             allowed: !blocked,
             blocked,
@@ -220,7 +225,9 @@ class SecployGate {
     // ------------------------------------------------------------------
     /** Return the decision for a request without enforcing it. */
     async inspect(request, auth, metadata) {
-        const method = String(request.method ?? "GET").trim().toUpperCase();
+        const method = String(request.method ?? "GET")
+            .trim()
+            .toUpperCase();
         const rawUrl = String(request.endpoint ??
             request.originalUrl ??
             request.url ??

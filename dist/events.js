@@ -134,7 +134,9 @@ class EventHandler {
             // Scrubbing runs last so nothing the hook returned - including anything
             // it added - can escape unscrubbed.
             const scrubbed = this.scrubber.scrub(prepared);
-            if (!scrubbed || typeof scrubbed !== "object" || Array.isArray(scrubbed)) {
+            if (!scrubbed ||
+                typeof scrubbed !== "object" ||
+                Array.isArray(scrubbed)) {
                 // The scrubber refused the payload outright.
                 return false;
             }
@@ -144,7 +146,10 @@ class EventHandler {
                 // carries the same ids, which is what lets the ingest recognise a
                 // redelivery and not count the occurrence twice - and occurrence
                 // counts are the whole point of grouping.
-                payload: { event_id: (0, crypto_1.randomUUID)(), ...scrubbed },
+                payload: {
+                    event_id: (0, crypto_1.randomUUID)(),
+                    ...scrubbed,
+                },
                 timestamp: Date.now(),
             };
             this.queue.enqueue(event);

@@ -39,20 +39,60 @@ exports.REDACTED = "[secploy:redacted]";
  * "API-Key", "api_key" and "apiKey" are one entry rather than three.
  */
 exports.DEFAULT_DENY_KEYS = new Set([
-    "password", "passwd", "pwd", "passphrase",
-    "secret", "clientsecret", "appsecret",
-    "token", "accesstoken", "refreshtoken", "idtoken", "bearertoken",
-    "apikey", "apisecret", "apitoken", "xapikey",
-    "auth", "authorization", "proxyauthorization",
-    "cookie", "cookies", "setcookie",
-    "sessionkey", "sessiontoken", "sessid", "sid",
-    "csrf", "csrftoken", "xsrftoken",
-    "privatekey", "publickey", "signingkey", "encryptionkey", "signature",
-    "credentials", "credential",
-    "creditcard", "cardnumber", "cardnum", "cvv", "cvc", "pin",
-    "ssn", "socialsecurity", "socialsecuritynumber", "taxid",
-    "otp", "mfacode", "totp", "twofactorcode",
-    "dbpassword", "databaseurl", "connectionstring", "dsn",
+    "password",
+    "passwd",
+    "pwd",
+    "passphrase",
+    "secret",
+    "clientsecret",
+    "appsecret",
+    "token",
+    "accesstoken",
+    "refreshtoken",
+    "idtoken",
+    "bearertoken",
+    "apikey",
+    "apisecret",
+    "apitoken",
+    "xapikey",
+    "auth",
+    "authorization",
+    "proxyauthorization",
+    "cookie",
+    "cookies",
+    "setcookie",
+    "sessionkey",
+    "sessiontoken",
+    "sessid",
+    "sid",
+    "csrf",
+    "csrftoken",
+    "xsrftoken",
+    "privatekey",
+    "publickey",
+    "signingkey",
+    "encryptionkey",
+    "signature",
+    "credentials",
+    "credential",
+    "creditcard",
+    "cardnumber",
+    "cardnum",
+    "cvv",
+    "cvc",
+    "pin",
+    "ssn",
+    "socialsecurity",
+    "socialsecuritynumber",
+    "taxid",
+    "otp",
+    "mfacode",
+    "totp",
+    "twofactorcode",
+    "dbpassword",
+    "databaseurl",
+    "connectionstring",
+    "dsn",
 ]);
 /**
  * Keys the SDK produces itself and has already made safe.
@@ -61,7 +101,10 @@ exports.DEFAULT_DENY_KEYS = new Set([
  * otherwise catch - and it must not, because it is how a session is recognised
  * across events. It arrives here already hashed.
  */
-exports.EXEMPT_KEYS = new Set(["sessionid", "identitykey"]);
+exports.EXEMPT_KEYS = new Set([
+    "sessionid",
+    "identitykey",
+]);
 /**
  * Value shapes worth removing wherever they appear, including inside a message
  * or under a key nobody thought to deny.
@@ -106,7 +149,9 @@ exports.MAX_STRING = 8192;
 const HASHED_SESSION = /^sess_[0-9a-f]{32}$/;
 /** Lowercase a key and drop separators, so naming style stops mattering. */
 function normalizeKey(key) {
-    return String(key).toLowerCase().replace(/[^a-z0-9]/g, "");
+    return String(key)
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
 }
 /** The checksum every real card number satisfies. */
 function luhnValid(digits) {
@@ -172,7 +217,8 @@ function hashSessionId(value) {
     // fail, so applying it twice has to be the same as applying it once.
     if (HASHED_SESSION.test(text))
         return text;
-    return "sess_" + (0, crypto_1.createHash)("sha256").update(text, "utf8").digest("hex").slice(0, 32);
+    return ("sess_" +
+        (0, crypto_1.createHash)("sha256").update(text, "utf8").digest("hex").slice(0, 32));
 }
 /** Removes credentials from an event payload. */
 class Scrubber {
@@ -232,7 +278,9 @@ class Scrubber {
             if (seen.has(value))
                 return "[secploy:circular]";
             seen.add(value);
-            return value.slice(0, exports.MAX_ITEMS).map((item) => this.walk(item, depth + 1, seen));
+            return value
+                .slice(0, exports.MAX_ITEMS)
+                .map((item) => this.walk(item, depth + 1, seen));
         }
         if (typeof value === "object") {
             if (seen.has(value))
@@ -251,7 +299,8 @@ class Scrubber {
             let index = 0;
             for (const key of Object.keys(value)) {
                 if (index >= exports.MAX_ITEMS) {
-                    scrubbed["[secploy:truncated]"] = Object.keys(value).length - exports.MAX_ITEMS;
+                    scrubbed["[secploy:truncated]"] =
+                        Object.keys(value).length - exports.MAX_ITEMS;
                     break;
                 }
                 index++;
