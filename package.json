@@ -1,9 +1,35 @@
 {
   "name": "secploy",
-  "version": "1.5.0",
-  "description": "Node.js SDK for Secploy Security & Observability Platform",
+  "version": "1.6.0",
+  "description": "Node.js, browser and React Native SDK for Secploy Security & Observability Platform",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser/index.d.ts",
+      "default": "./dist/browser/index.js"
+    },
+    "./react-native": {
+      "types": "./dist/react-native/index.d.ts",
+      "default": "./dist/react-native/index.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "browser": [
+        "dist/browser/index.d.ts"
+      ],
+      "react-native": [
+        "dist/react-native/index.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "build": "tsc",
     "test": "jest --detectOpenHandles",
@@ -16,17 +42,23 @@
     "postversion": "git push && git push --tags"
   },
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "browser/package.json",
+    "react-native/package.json"
   ],
   "keywords": [
+    "browser",
     "express-middleware",
     "gate",
     "monitoring",
     "observability",
     "rasp",
+    "react-native",
+    "rrweb",
     "sdk",
     "secploy",
     "security",
+    "session-replay",
     "waf"
   ],
   "author": "Secploy",
@@ -34,6 +66,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^20.0.0",
+    "@types/react": "^19.3.0",
     "@types/ws": "^8.5.0",
     "@typescript-eslint/eslint-plugin": "^8.69.0",
     "@typescript-eslint/parser": "^8.69.0",
@@ -44,13 +77,30 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "axios": "^1.0.0"
+    "axios": "^1.0.0",
+    "jpeg-js": "^0.4.4"
   },
   "peerDependencies": {
-    "ws": "^8.0.0"
+    "ws": "^8.0.0",
+    "react": ">=18.0.0",
+    "react-native": ">=0.72.0",
+    "react-native-view-shot": ">=3.8.0",
+    "rrweb": "^2.0.0"
   },
   "peerDependenciesMeta": {
     "ws": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-native": {
+      "optional": true
+    },
+    "react-native-view-shot": {
+      "optional": true
+    },
+    "rrweb": {
       "optional": true
     }
   }

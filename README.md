@@ -147,3 +147,120 @@ npm install ws
 ```
 
 Without it the SDK polls every 15 seconds instead.
+
+## Browser and React Native
+
+The same package ships two front-end clients as separate entry points. Neither
+imports anything from Node (`crypto`, `path`, `axios`, `ws`), so bundlers need no
+polyfills and the server client's code never reaches a page or an app.
+
+| Import | For |
+| --- | --- |
+| `secploy` | Node servers: the gate, identity reporting, error capture |
+| `secploy/browser` | Web apps: error capture and session replay |
+| `secploy/react-native` | React Native apps: error capture and session replay |
+
+Both clients capture uncaught errors and unhandled rejections, scrub every event
+with the same rules as the Node client, and report errors in the shape every
+Secploy SDK uses, so a browser error groups and renders like a server one.
+
+### Session replay
+
+Replay records what the user saw in the seconds **before an error**. It is
+off by default, because it records somebody else's user.
+
+It runs in error-buffer mode, like the Flutter SDK. The recent past is held in
+memory and discarded as it ages, and it is only uploaded when an error is
+reported. An app that does not crash sends nothing. The recording is attached to
+the error it explains, and appears on that issue in the dashboard.
+
+#### Web
+
+```bash
+npm install secploy rrweb
+```
+
+```ts
+import { record } from "rrweb";
+import { SecployBrowser } from "secploy/browser";
+
+SecployBrowser.init({
+  apiKey: "...",
+  environmentKey: "...",
+  organizationId: "...",
+  ingestUrl: "https://ingest.secploy.com/ingest",
+  release: "2.4.1",
+  replay: { enabled: true, record },
+});
+```
+
+The web recording is DOM-based (rrweb), not screenshots. It records the page
+once, then only what changes, so it costs the page almost nothing while nothing
+is going wrong. A fresh snapshot is taken every `bufferSeconds` (default 30).
+The window uploaded for an error covers the last 30 to 60 seconds.
+
+Masking happens before anything is recorded. Real characters never enter an
+event, so they cannot leave the page.
+
+- All text is masked by default. Add `data-secploy-unmask` to an element to
+  record its text as-is. Add `data-secploy-mask` inside it to mask again.
+- Every input value is masked. Values inside `data-secploy-unmask` are recorded,
+  except password fields, which are never recorded.
+- Images, video, canvas and iframes are replaced by placeholders unless they sit
+  inside `data-secploy-unmask`. Add `data-secploy-block` to anything you want
+  left out entirely.
+
+`maskAllText: false` and `blockMedia: false` relax those defaults if you want to.
+
+#### React Native
+
+```bash
+npm install secploy react-native-view-shot
+```
+
+```tsx
+import { captureRef } from "react-native-view-shot";
+import { SecployReactNative, SecployReplayRoot, SecployUnmask } from "secploy/react-native";
+
+SecployReactNative.init({
+  apiKey: "...",
+  environmentKey: "...",
+  organizationId: "...",
+  ingestUrl: "https://ingest.secploy.com/ingest",
+  replay: { enabled: true, captureRef },
+});
+
+export default function Root() {
+  return (
+    <SecployReplayRoot>
+      <App />
+    </SecployReplayRoot>
+  );
+}
+```
+
+React Native records one small JPEG per second, about a third of the screen's
+size, by default. Each frame is masked on the device before it is kept.
+
+- Every `Text`, `TextInput`, `Image`, web view, video, map and camera is painted
+  over by default. Wrap a subtree in `<SecployUnmask>` to record it as-is.
+- Wrap anything else sensitive, such as a custom-drawn chart, in
+  `<SecployMask>`.
+- If the SDK cannot work out where every masked element is, it drops the frame.
+  An unmasked frame is never kept.
+
+A fatal JS error holds the app open for up to `fatalFlushTimeoutMs` (default
+3000). That gives the report and its recording a chance to upload before React
+Native's own handler ends the app.
+
+#### What the deployment needs
+
+Recordings are uploaded straight from the browser or device to object storage,
+using a URL signed by the Secploy API. For web replay, both of the following
+must accept requests from your site's origin:
+
+- The API's `/projects/replay/upload-url/` endpoint.
+- The replay bucket, which must accept PUT requests.
+
+Secploy's hosted service is configured for this. React Native needs neither,
+because native apps are not subject to CORS.

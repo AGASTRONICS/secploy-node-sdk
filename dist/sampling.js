@@ -64,6 +64,10 @@ exports.ALWAYS_SENT_PREFIXES = [
     "payment.",
     "api.abuse",
     "dependency_scan.",
+    // Session replay index events. By the time one is sent the bytes are already
+    // in object storage, so dropping it saves nothing - it strands an object no
+    // issue points at. The ingest and the Flutter SDK carry the same entry.
+    "replay.",
 ];
 /**
  * Fields that identify who an event is about, most specific first, so sampling

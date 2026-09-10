@@ -48,7 +48,7 @@ rely on that. Rebuild and commit before tagging, so the repo tells the truth.
 ```bash
 npm run lint          # eslint src --ext .ts   (NOT `eslint .` — see below)
 npx tsc --noEmit      # type check without emitting
-npm test              # jest, 255 tests
+npm test              # jest, 336 tests
 npm run build         # tsc -> dist/
 git status            # dist/ should be clean, or commit the rebuild
 ```
